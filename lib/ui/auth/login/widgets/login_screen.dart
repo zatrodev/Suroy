@@ -3,6 +3,7 @@ import 'package:app/ui/auth/login/view_models/login_viewmodel.dart';
 import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
 import 'package:app/ui/auth/login/widgets/carousel_images.dart';
 import 'package:app/ui/core/themes/dimens.dart';
+import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final CarouselController _carouselController = CarouselController(
     initialItem: 1,
@@ -26,7 +28,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _signInPasswordController =
       TextEditingController();
 
-  final TextEditingController _signUpNameController = TextEditingController();
+  final TextEditingController _signUpFirstNameController =
+      TextEditingController();
+  final TextEditingController _signUpLastNameController =
+      TextEditingController();
   final TextEditingController _signUpEmailController = TextEditingController();
   final TextEditingController _signUpPasswordController =
       TextEditingController();
@@ -80,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Dispose all controllers
     _signInEmailController.dispose();
     _signInPasswordController.dispose();
-    _signUpNameController.dispose();
+    _signUpFirstNameController.dispose();
     _signUpEmailController.dispose();
     _signUpPasswordController.dispose();
     _signUpConfirmPasswordController.dispose();
@@ -162,10 +167,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: child,
                         );
                       },
-                      child:
-                          _isSignIn
-                              ? _buildSignInForm(context)
-                              : _buildSignUpForm(context),
+                      child: Form(
+                        key: _formKey,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        child:
+                            _isSignIn
+                                ? _buildSignInForm(context)
+                                : _buildSignUpForm(context),
+                      ),
                     ),
                   ],
                 ),
@@ -189,6 +198,12 @@ class _LoginScreenState extends State<LoginScreen> {
             label: "Email",
             textFieldLabel: "email@example.com",
             controller: _signInEmailController,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              return null;
+            },
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
@@ -196,6 +211,12 @@ class _LoginScreenState extends State<LoginScreen> {
             textFieldLabel: "Password",
             controller: _signInPasswordController,
             obscureText: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your password';
+              }
+              return null;
+            },
           ),
           SizedBox(height: Dimens.paddingVertical),
           ListenableBuilder(
@@ -228,11 +249,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           isLoading
                               ? null
                               : () {
-                                // TODO: Add form validation if needed
-                                widget.viewModel.signIn.execute((
-                                  _signInEmailController.value.text,
-                                  _signInPasswordController.value.text,
-                                ));
+                                if (_formKey.currentState!.validate())
+                                  widget.viewModel.signIn.execute((
+                                    _signInEmailController.value.text,
+                                    _signInPasswordController.value.text,
+                                  ));
                               },
                     ),
                   ),
@@ -264,17 +285,54 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          TextFieldWithLabel(
-            // Add Name field
-            label: "Full Name",
-            textFieldLabel: "Juan Dela Cruz",
-            controller: _signUpNameController,
+          Row(
+            spacing: Dimens.paddingHorizontal / 2,
+            children: [
+              Expanded(
+                child: TextFieldWithLabel(
+                  label: "First Name",
+                  textFieldLabel: "Juan",
+                  controller: _signUpFirstNameController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your first name';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              Expanded(
+                child: TextFieldWithLabel(
+                  label: "Last Name",
+                  textFieldLabel: "Dela Cruz",
+                  controller: _signUpLastNameController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your last name';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
             label: "Email",
             textFieldLabel: "email@example.com",
             controller: _signUpEmailController,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Email cannot be empty';
+              }
+
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+              if (!emailRegex.hasMatch(value.trim())) {
+                return 'Please enter a valid email address';
+              }
+
+              return null;
+            },
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
@@ -285,7 +343,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
-            // Add Confirm Password field
             label: "Confirm Password",
             textFieldLabel: "Confirm Password",
             controller: _signUpConfirmPasswordController,
@@ -293,7 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           SizedBox(height: Dimens.paddingVertical),
           ListenableBuilder(
-            listenable: widget.viewModel.signUp, // Listen to signUp action
+            listenable: widget.viewModel.signUp,
             builder: (context, _) {
               final bool isLoading = widget.viewModel.signUp.running;
               return Row(
@@ -323,21 +380,40 @@ class _LoginScreenState extends State<LoginScreen> {
                           isLoading
                               ? null
                               : () {
-                                // TODO: Add validation (e.g., passwords match)
                                 if (_signUpPasswordController.text !=
                                     _signUpConfirmPasswordController.text) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Passwords do not match!"),
+                                    AppSnackBar.show(
+                                      context: context,
+                                      content: const Text(
+                                        "Passwords do not match!",
+                                      ),
+                                      type: "error",
+
+                                      onPressed: () {
+                                        // Check if still mounted before accessing controllers/viewModel
+                                        if (mounted) {
+                                          widget.viewModel.signIn.execute((
+                                            _signInEmailController.value.text,
+                                            _signInPasswordController
+                                                .value
+                                                .text,
+                                          ));
+                                        }
+                                      },
                                     ),
                                   );
                                   return;
                                 }
-                                widget.viewModel.signUp.execute((
-                                  _signUpNameController.value.text,
-                                  _signUpEmailController.value.text,
-                                  _signUpPasswordController.value.text,
-                                ));
+
+                                if (_formKey.currentState!.validate()) {
+                                  widget.viewModel.signUp.execute((
+                                    _signUpFirstNameController.value.text,
+                                    _signUpLastNameController.value.text,
+                                    _signUpEmailController.value.text,
+                                    _signUpPasswordController.value.text,
+                                  ));
+                                }
                               },
                     ),
                   ),
@@ -371,31 +447,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (loginState.completed) {
       loginState.clearResult();
-      // Use context safely
       if (context.mounted) {
-        // Example navigation using go_router
         context.go(Routes.home);
-        // Or using Navigator:
-        // Navigator.of(context).pushReplacementNamed(Routes.home);
       }
     } else if (loginState.error) {
       loginState.clearResult();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          AppSnackBar.show(
+            context: context,
             content: const Text("Error while trying to login"),
-            action: SnackBarAction(
-              label: "Try again",
-              onPressed: () {
-                // Check if still mounted before accessing controllers/viewModel
-                if (mounted) {
-                  widget.viewModel.signIn.execute((
-                    _signInEmailController.value.text,
-                    _signInPasswordController.value.text,
-                  ));
-                }
-              },
-            ),
+            type: "error",
+            onPressed: () {
+              if (mounted) {
+                widget.viewModel.signIn.execute((
+                  _signInEmailController.value.text,
+                  _signInPasswordController.value.text,
+                ));
+              }
+            },
           ),
         );
       }
@@ -412,16 +482,41 @@ class _LoginScreenState extends State<LoginScreen> {
       signUpState.clearResult();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Sign up successful! Please sign in.")),
+          AppSnackBar.show(
+            context: context,
+            content: Text("Sign up successful! Please sign in."),
+            type: "success",
+            onPressed: () {
+              if (mounted) {
+                widget.viewModel.signIn.execute((
+                  _signInEmailController.value.text,
+                  _signInPasswordController.value.text,
+                ));
+              }
+            },
+          ),
         );
         _toggleForm();
       }
     } else if (signUpState.error) {
       signUpState.clearResult();
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Error during sign up")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppSnackBar.show(
+            context: context,
+            content: const Text("Error during sign up."),
+            type: "error",
+            onPressed: () {
+              // Check if still mounted before accessing controllers/viewModel
+              if (mounted) {
+                widget.viewModel.signIn.execute((
+                  _signInEmailController.value.text,
+                  _signInPasswordController.value.text,
+                ));
+              }
+            },
+          ),
+        );
       }
     }
   }
