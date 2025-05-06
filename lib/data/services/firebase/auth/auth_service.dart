@@ -1,4 +1,5 @@
-import 'package:app/data/services/firebase/user_service.dart';
+import 'package:app/data/services/firebase/user/user_service.dart';
+import 'package:app/utils/result.dart'; // Assuming your Result class is here
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthService {
@@ -11,25 +12,26 @@ class AuthService {
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  Future<UserCredential?> signInWithEmailAndPassword({
+  Future<Result<UserCredential>> signInWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
     try {
       UserCredential userCredential = await _firebaseAuth
           .signInWithEmailAndPassword(email: email, password: password);
+
       print("User signed in: ${userCredential.user?.uid}");
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      print("Sign in error: ${e.code} - ${e.message}");
-      rethrow;
-    } catch (e) {
-      print("General sign in error: $e");
-      rethrow;
+      return Result.ok(userCredential);
+    } on FirebaseAuthException catch (error) {
+      print("Sign in error: ${error.code} - ${error.message}");
+      return Result.error(error);
+    } on Exception catch (error) {
+      print("General sign in error: $error");
+      return Result.error(error);
     }
   }
 
-  Future<UserCredential?> signUpWithEmailAndPassword({
+  Future<Result<UserCredential>> signUpWithEmailAndPassword({
     required String email,
     required String password,
     required String firstName,
@@ -40,31 +42,51 @@ class AuthService {
           .createUserWithEmailAndPassword(email: email, password: password);
       print("User signed up: ${userCredential.user?.uid}");
 
-      if (userCredential.user != null) {
+      final user = userCredential.user;
+      if (user != null) {
         await _userService.createUserProfile(
-          userId: userCredential.user!.uid,
+          userId: user.uid,
           email: email,
           firstName: firstName,
           lastName: lastName,
         );
+        print("User profile created for: ${user.uid}");
+        // If both steps are successful, return Ok result
+        return Result.ok(userCredential);
+      } else {
+        // This case should technically not happen if createUser succeeds,
+        // but handle defensively.
+        print("Sign up error: User object was null after creation.");
+        return Result.error(
+          Exception("User object was null after successful creation"),
+        );
       }
-      return userCredential;
-    } on FirebaseAuthException catch (e) {
-      print("Sign up error: ${e.code} - ${e.message}");
-
-      rethrow;
-    } catch (e) {
-      print("General sign up error: $e");
-      rethrow;
+    } on FirebaseAuthException catch (error) {
+      // Catch Firebase specific errors (e.g., email-already-in-use)
+      print("Sign up FirebaseAuthException: ${error.code} - ${error.message}");
+      return Result.error(error); // Return error result
+    } on Exception catch (error) {
+      // Catch other potential errors (e.g., during createUserProfile)
+      print("General sign up error: $error");
+      return Result.error(error); // Return error result
     }
   }
 
-  Future<void> signOut() async {
+  // Refactored signOut
+  Future<Result<void>> signOut() async {
+    // Changed return type to Result<void>
     try {
       await _firebaseAuth.signOut();
-      print("User signed out");
-    } catch (e) {
-      print("Error signing out: $e");
+      print("User signed out successfully");
+      return Result.ok(()); // Use unit type `()` for void success
+    } on FirebaseAuthException catch (error) {
+      print(
+        "Error signing out (FirebaseAuthException): ${error.code} - ${error.message}",
+      );
+      return Result.error(error); // Return error result
+    } on Exception catch (error) {
+      print("General error signing out: $error");
+      return Result.error(error); // Return error result
     }
   }
 }

@@ -1,134 +1,145 @@
 import 'package:app/data/services/firebase/firestore_service.dart';
-import 'package:app/data/services/firebase/travel_plan/travel_plan_model.dart';
+import 'package:app/data/services/firebase/travel_plan/travel_plan_model.dart'; // Assuming model is here
+import 'package:app/utils/result.dart'; // Import your Result class
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TravelPlanService extends FirestoreService {
   TravelPlanService({required super.firestoreInstance})
-    : super(collectionName: "travel_plans");
+      : super(collectionName: "travel_plans");
 
   Stream<List<TravelPlan>> getMyTravelPlansStream(String userId) {
     try {
       return collectionReference
           .where('ownerId', isEqualTo: userId)
-          .orderBy('startDate', descending: false) // Example sorting
+          .orderBy('startDate', descending: false)
           .snapshots()
           .map(
-            (snapshot) =>
-                snapshot.docs
-                    .map((doc) => TravelPlan.fromFirestore(doc))
-                    .toList(),
+            (snapshot) => snapshot.docs
+                .map((doc) => TravelPlan.fromFirestore(doc))
+                .toList(),
           )
           .handleError((error) {
-            print("Error fetching user's travel plans: $error");
-            // Depending on stream error handling strategy, might return empty list or let error propagate
-            return <TravelPlan>[];
-          });
+        print("Error in user's travel plans stream: $error");
+        return <TravelPlan>[];
+      });
     } catch (e) {
       print("Exception setting up user's travel plans stream: $e");
-      return Stream.value([]); // Return empty stream on initial setup error
+      return Stream.value([]);
     }
   }
 
-  /// Gets a stream of travel plans shared with the user.
   Stream<List<TravelPlan>> getSharedTravelPlansStream(String userId) {
     try {
       return collectionReference
-          .where(
-            'sharedWith',
-            arrayContains: userId,
-          ) // Query based on the array field
-          .orderBy('startDate', descending: false) // Example sorting
+          .where('sharedWith', arrayContains: userId)
+          .orderBy('startDate', descending: false)
           .snapshots()
           .map(
-            (snapshot) =>
-                snapshot.docs
-                    .map((doc) => TravelPlan.fromFirestore(doc))
-                    .toList(),
+            (snapshot) => snapshot.docs
+                .map((doc) => TravelPlan.fromFirestore(doc))
+                .toList(),
           )
           .handleError((error) {
-            print("Error fetching shared travel plans: $error");
-            return <TravelPlan>[];
-          });
+        print("Error in shared travel plans stream: $error");
+        return <TravelPlan>[]; 
+      });
     } catch (e) {
       print("Exception setting up shared travel plans stream: $e");
       return Stream.value([]);
     }
   }
 
-  // --- CRUD Methods ---
-
-  Future<void> addTravelPlan(TravelPlan plan) async {
+  Future<Result<void>> addTravelPlan(TravelPlan plan) async {
     try {
-      // The plan.id should be pre-generated (e.g., using Uuid) before calling this
       await collectionReference.doc(plan.id).set(plan.toJson());
-      print('TravelPlan added with ID: ${plan.id}');
-    } catch (e) {
-      print('Error adding travel plan: $e');
-      // Re-throw a more specific exception or handle as needed
-      throw Exception('Failed to add travel plan.');
+      print('TravelPlan added successfully with ID: ${plan.id}');
+      return const Result.ok(()); 
+    } on FirebaseException catch (e) {
+      print('Error adding travel plan (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e); 
+    } on Exception catch (e) {
+      print('Error adding travel plan (General Exception): $e');
+      return Result.error(e); 
     }
   }
 
-  Future<void> updateTravelPlan(TravelPlan plan) async {
+  Future<Result<void>> updateTravelPlan(TravelPlan plan) async {
     try {
-      // Ensure the 'updatedAt' field is current (optional, could be handled in model/repo)
-      // final dataToUpdate = plan.copyWith(updatedAt: DateTime.now()).toJson();
       await collectionReference.doc(plan.id).update(plan.toJson());
-      print('TravelPlan updated with ID: ${plan.id}');
-    } catch (e) {
-      print('Error updating travel plan: $e');
-      throw Exception('Failed to update travel plan.');
+      print('TravelPlan updated successfully with ID: ${plan.id}');
+      return const Result.ok(()); 
+    } on FirebaseException catch (e) {
+      print('Error updating travel plan (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e);
+    } on Exception catch (e) {
+      print('Error updating travel plan (General Exception): $e');
+      return Result.error(e);
     }
   }
 
-  Future<void> deleteTravelPlan(String planId) async {
+  Future<Result<void>> deleteTravelPlan(String planId) async {
     try {
       await collectionReference.doc(planId).delete();
-      print('TravelPlan deleted with ID: $planId');
-    } catch (e) {
-      print('Error deleting travel plan: $e');
-      throw Exception('Failed to delete travel plan.');
+      print('TravelPlan deleted successfully with ID: $planId');
+      return const Result.ok(());
+    } on FirebaseException catch (e) {
+      print('Error deleting travel plan (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e);
+    } on Exception catch (e) {
+      print('Error deleting travel plan (General Exception): $e');
+      return Result.error(e);
     }
   }
 
-  Future<TravelPlan?> getTravelPlanById(String planId) async {
+  Future<Result<TravelPlan>> getTravelPlanById(String planId) async {
     try {
       final docSnapshot = await collectionReference.doc(planId).get();
       if (docSnapshot.exists) {
-        return TravelPlan.fromFirestore(docSnapshot);
+        final plan = TravelPlan.fromFirestore(docSnapshot);
+        print('TravelPlan fetched successfully for ID: $planId');
+        return Result.ok(plan); 
       } else {
-        return null;
+        print('TravelPlan not found for ID: $planId');
+        return Result.error(Exception("Travel plan with ID $planId not found."));
       }
-    } catch (e) {
-      print('Error fetching travel plan by ID: $e');
-      // Depending on requirements, return null or throw
-      return null;
+    } on FirebaseException catch (e) {
+      print('Error fetching travel plan by ID (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e);
+    } on Exception catch (e) {
+      print('Error fetching travel plan by ID (General Exception): $e');
+      return Result.error(e);
     }
   }
 
-  // --- Sharing Methods ---
-
-  Future<void> shareTravelPlan(String planId, String userIdToShareWith) async {
+  Future<Result<void>> shareTravelPlan(String planId, String userIdToShareWith) async {
     try {
       await collectionReference.doc(planId).update({
         'sharedWith': FieldValue.arrayUnion([userIdToShareWith]),
       });
-      print('TravelPlan $planId shared with $userIdToShareWith');
-    } catch (e) {
-      print('Error sharing travel plan: $e');
-      throw Exception('Failed to share travel plan.');
+      print('TravelPlan $planId shared successfully with $userIdToShareWith');
+      return const Result.ok(()); 
+    } on FirebaseException catch (e) {
+      print('Error sharing travel plan (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e);
+    } on Exception catch (e) {
+      print('Error sharing travel plan (General Exception): $e');
+      return Result.error(e);
     }
   }
 
-  Future<void> unshareTravelPlan(String planId, String userIdToRemove) async {
+  Future<Result<void>> unshareTravelPlan(String planId, String userIdToRemove) async {
     try {
       await collectionReference.doc(planId).update({
         'sharedWith': FieldValue.arrayRemove([userIdToRemove]),
       });
-      print('TravelPlan $planId unshared from $userIdToRemove');
-    } catch (e) {
-      print('Error un-sharing travel plan: $e');
-      throw Exception('Failed to unshare travel plan.');
+      print('TravelPlan $planId unshared successfully from $userIdToRemove');
+      return const Result.ok(()); // Return Ok on success
+    } on FirebaseException catch (e) {
+      print('Error un-sharing travel plan (FirebaseException): ${e.code} - ${e.message}');
+      return Result.error(e);
+    } on Exception catch (e) {
+      print('Error un-sharing travel plan (General Exception): $e');
+      return Result.error(e);
     }
   }
 }
