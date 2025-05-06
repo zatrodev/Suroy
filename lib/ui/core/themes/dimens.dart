@@ -9,7 +9,7 @@ abstract final class Dimens {
   static const paddingHorizontal = 20.0;
 
   /// General vertical padding used to separate UI items
-  static const paddingVertical = 24.0;
+  static const paddingVertical = 20.0;
 
   /// Horizontal padding for screen edges
   double get paddingScreenHorizontal;

@@ -2,23 +2,33 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:app/utils/command.dart';
+import 'package:app/utils/result.dart';
+import 'package:logging/logging.dart';
+
 import '../../../../data/repositories/auth/auth_repository.dart';
 
 class LoginViewModel {
   LoginViewModel({required AuthRepository authRepository})
-    : _authRepository = authRepository;
+    : _authRepository = authRepository {
+    login = Command1<void, (String email, String password)>(_login);
+  }
 
   final AuthRepository _authRepository;
+  final _log = Logger('LoginViewModel');
 
-  Future<void> login((String, String) credentials) async {
+  late Command1 login;
+
+  Future<Result<void>> _login((String, String) credentials) async {
     final (email, password) = credentials;
-    try {
-      await _authRepository.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-    } catch (e) {
-      // TODO
+    final result = await _authRepository.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    if (result is Error<void>) {
+      _log.warning('Login failed! ${result.error}');
     }
+    return result;
   }
 }
