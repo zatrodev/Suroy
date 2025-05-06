@@ -6,7 +6,7 @@ class TravelPlanRepository {
   final TravelPlanService _travelPlanService;
 
   TravelPlanRepository({required TravelPlanService travelPlanService})
-      : _travelPlanService = travelPlanService;
+    : _travelPlanService = travelPlanService;
 
   Stream<List<TravelPlan>> getMyTravelPlansStream(String userId) {
     return _travelPlanService.getMyTravelPlansStream(userId);
@@ -17,30 +17,28 @@ class TravelPlanRepository {
   }
 
   Future<Result<void>> addTravelPlan(TravelPlan plan) async {
-    final result = await _travelPlanService.addTravelPlan(plan);
-    return switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final e) => Result.error(e),
-    };
+    try {
+      return _travelPlanService.addTravelPlan(plan);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 
   Future<Result<void>> updateTravelPlan(TravelPlan plan) async {
-    final planToUpdate = plan.copyWith(updatedAt: DateTime.now());
-    final result = await _travelPlanService.updateTravelPlan(planToUpdate);
-
-    return switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final e) => Result.error(e),
-    };
+    try {
+      final planToUpdate = plan.copyWith(updatedAt: DateTime.now());
+      return _travelPlanService.updateTravelPlan(planToUpdate);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 
   Future<Result<void>> deleteTravelPlan(String planId) async {
-    final result = await _travelPlanService.deleteTravelPlan(planId);
-
-    return switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final e) => Result.error(e),
-    };
+    try {
+      return _travelPlanService.deleteTravelPlan(planId);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 
   Future<Result<TravelPlan>> getTravelPlanById(String planId) async {
@@ -51,21 +49,25 @@ class TravelPlanRepository {
     };
   }
 
-  Future<Result<void>> shareTravelPlan(String planId, String userIdToShareWith) async {
-    final result = await _travelPlanService.shareTravelPlan(planId, userIdToShareWith);
-
-    return switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final e) => Result.error(e),
-    };
+  Future<Result<void>> shareTravelPlan(
+    String planId,
+    String userIdToShareWith,
+  ) async {
+    try {
+      return _travelPlanService.shareTravelPlan(planId, userIdToShareWith);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 
-  Future<Result<void>> unshareTravelPlan(String planId, String userIdToRemove) async {
-    final result = await _travelPlanService.unshareTravelPlan(planId, userIdToRemove);
-
-    return switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final e) => Result.error(e),
-    };
+  Future<Result<void>> unshareTravelPlan(
+    String planId,
+    String userIdToRemove,
+  ) async {
+    try {
+      return _travelPlanService.unshareTravelPlan(planId, userIdToRemove);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 }

@@ -76,9 +76,7 @@ class AuthService {
   Future<Result<void>> signOut() async {
     // Changed return type to Result<void>
     try {
-      await _firebaseAuth.signOut();
-      print("User signed out successfully");
-      return Result.ok(()); // Use unit type `()` for void success
+      return Result.ok(await _firebaseAuth.signOut());
     } on FirebaseAuthException catch (error) {
       print(
         "Error signing out (FirebaseAuthException): ${error.code} - ${error.message}",

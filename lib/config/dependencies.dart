@@ -1,6 +1,6 @@
 import 'package:app/data/repositories/auth/auth_repository.dart';
 import 'package:app/data/repositories/travel_plan/travel_plan_repository.dart';
-import 'package:app/data/services/firebase/auth_service.dart';
+import 'package:app/data/services/firebase/auth/auth_service.dart';
 import 'package:app/data/services/firebase/travel_plan/travel_plan_service.dart';
 import 'package:app/data/services/firebase/user/user_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
