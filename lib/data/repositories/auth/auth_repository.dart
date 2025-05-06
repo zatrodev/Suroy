@@ -28,23 +28,22 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  Future<Result<User>> signUpWithEmailAndPassword({
+  Future<Result<void>> signUpWithEmailAndPassword({
     required String email,
     required String password,
     required String firstName,
     required String lastName,
   }) async {
-    final result = await _authService.signUpWithEmailAndPassword(
-      email: email,
-      password: password,
-      firstName: firstName,
-      lastName: lastName,
-    );
-
-    return switch (result) {
-      Ok(value: final userCredential) => Result.ok(userCredential.user!),
-      Error(error: final exception) => Result.error(exception),
-    };
+    try {
+      return _authService.signUpWithEmailAndPassword(
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+      );
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
   }
 
   Future<Result<void>> signOut() async {

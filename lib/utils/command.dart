@@ -95,4 +95,3 @@ class Command1<T, A> extends Command<T> {
     await _execute(() => _action(argument));
   }
 }
-

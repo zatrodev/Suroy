@@ -1,5 +1,7 @@
 import 'package:app/routing/routes.dart';
 import 'package:app/ui/auth/login/view_models/login_viewmodel.dart';
+import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
+import 'package:app/ui/auth/login/widgets/carousel_images.dart';
 import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
 import 'package:flutter/material.dart';
@@ -15,28 +17,77 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final ScrollController _scrollController = ScrollController();
   final CarouselController _carouselController = CarouselController(
     initialItem: 1,
   );
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+
+  final TextEditingController _signInEmailController = TextEditingController();
+  final TextEditingController _signInPasswordController =
+      TextEditingController();
+
+  final TextEditingController _signUpNameController = TextEditingController();
+  final TextEditingController _signUpEmailController = TextEditingController();
+  final TextEditingController _signUpPasswordController =
+      TextEditingController();
+  final TextEditingController _signUpConfirmPasswordController =
+      TextEditingController();
+
+  bool _isSignIn = true;
+
+  void _scrollDown() {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: Duration(seconds: 1),
+      curve: Curves.fastOutSlowIn,
+    );
+  }
+
+  void _toggleForm() async {
+    setState(() {
+      _isSignIn = !_isSignIn;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _scrollDown();
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    widget.viewModel.login.addListener(_onResult);
+    widget.viewModel.signIn.addListener(_onLoginResult);
+    widget.viewModel.signUp.addListener(_onSignUpResult);
   }
 
   @override
   void didUpdateWidget(covariant LoginScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    oldWidget.viewModel.login.removeListener(_onResult);
-    widget.viewModel.login.addListener(_onResult);
+    oldWidget.viewModel.signIn.removeListener(_onLoginResult);
+    oldWidget.viewModel.signUp.removeListener(_onSignUpResult);
+    widget.viewModel.signIn.addListener(_onLoginResult);
+    widget.viewModel.signUp.addListener(_onSignUpResult);
   }
 
   @override
   void dispose() {
-    widget.viewModel.login.removeListener(_onResult);
+    // Remove listeners
+    widget.viewModel.signIn.removeListener(_onLoginResult);
+    widget.viewModel.signUp.removeListener(_onSignUpResult);
+
+    // Dispose all controllers
+    _signInEmailController.dispose();
+    _signInPasswordController.dispose();
+    _signUpNameController.dispose();
+    _signUpEmailController.dispose();
+    _signUpPasswordController.dispose();
+    _signUpConfirmPasswordController.dispose();
+
+    _scrollController.dispose();
+    _carouselController.dispose();
+
     super.dispose();
   }
 
@@ -45,114 +96,160 @@ class _LoginScreenState extends State<LoginScreen> {
     final double height = MediaQuery.sizeOf(context).height;
 
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
+      // Prevent keyboard overflow
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: Dimens.paddingVertical * 2),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: height / 3),
+              child: CarouselView.weighted(
+                controller: _carouselController,
+                itemSnapping: true,
+                flexWeights: const <int>[1, 7, 1],
+                children:
+                    CarouselImageInfo.values.map((CarouselImageInfo image) {
+                      return CarouselImageItem(imageInfo: image);
+                    }).toList(),
+              ),
+            ),
+            Padding(
+              padding: Dimens.of(context).edgeInsetsScreenSymmetric,
+              child: Padding(
+                padding: const EdgeInsets.only(top: Dimens.paddingVertical * 3),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Keep Title outside the changing part
+                    Text(
+                      "Suroy.",
+                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Plan your travels with ease.",
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                    SizedBox(height: Dimens.paddingVertical),
+
+                    // --- Animated Form Area ---
+                    AnimatedSwitcher(
+                      duration: const Duration(
+                        milliseconds: 200,
+                      ), // Animation duration
+                      transitionBuilder: (
+                        Widget child,
+                        Animation<double> animation,
+                      ) {
+                        // Define the slide transition
+                        final offsetAnimation = Tween<Offset>(
+                          begin: Offset(
+                            _isSignIn ? -1.0 : 1.0,
+                            0.0,
+                          ), // Come from left if signing IN, from right if signing UP
+                          end: Offset.zero,
+                        ).animate(animation);
+
+                        // Use SlideTransition
+                        return SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        );
+                      },
+                      child:
+                          _isSignIn
+                              ? _buildSignInForm(context)
+                              : _buildSignUpForm(context),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Sign In Form Widget ---
+  Widget _buildSignInForm(BuildContext context) {
+    // Use ValueKey to uniquely identify this widget for AnimatedSwitcher
+    return KeyedSubtree(
+      key: const ValueKey<bool>(true), // Key for Sign In state
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: height / 3),
-            child: CarouselView.weighted(
-              controller: _carouselController,
-              itemSnapping: true,
-              flexWeights: const <int>[1, 7, 1],
-              children:
-                  ImageInfo.values.map((ImageInfo image) {
-                    return CarouselImageItem(imageInfo: image);
-                  }).toList(),
-            ),
+          TextFieldWithLabel(
+            label: "Email",
+            textFieldLabel: "email@example.com",
+            controller: _signInEmailController,
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 60.0, left: 20, right: 20),
-            child: RichText(
-              textAlign: TextAlign.center, // Ensure the text itself is centered
-              text: TextSpan(
-                style: Theme.of(
-                  context,
-                ).textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
-                children: <TextSpan>[
-                  TextSpan(
-                    text: 'Suroy',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  TextSpan(
-                    text: '.',
-                    style: TextStyle(
-                      // Make the period stand out with the secondary color
-                      // Or choose a specific vibrant color like Colors.tealAccent
-                      color: Theme.of(context).colorScheme.secondary,
-                      // Optionally make the dot even bolder or slightly different size/offset
-                      fontWeight: FontWeight.w900, // Heavier weight for the dot
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextFieldWithLabel(
+            label: "Password",
+            textFieldLabel: "Password",
+            controller: _signInPasswordController,
+            obscureText: true,
           ),
-          Padding(
-            padding: Dimens.of(context).edgeInsetsScreenSymmetric,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 32.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          SizedBox(height: Dimens.paddingVertical),
+          ListenableBuilder(
+            listenable: widget.viewModel.signIn,
+            builder: (context, _) {
+              final bool isLoading = widget.viewModel.signIn.running;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextFieldWithLabel(
-                    label: "Email",
-                    textFieldLabel: "email@example.com",
-                    controller: _emailController,
-                  ),
-                  SizedBox(height: Dimens.paddingVertical),
-                  TextFieldWithLabel(
-                    label: "Password",
-                    textFieldLabel: "Password",
-                    controller: _passwordController,
-                    obscureText: true,
-                  ),
-                  SizedBox(height: Dimens.paddingVertical),
-                  ListenableBuilder(
-                    listenable: widget.viewModel.login,
-                    builder: (context, _) {
-                      final bool isLoading = widget.viewModel.login.running;
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              label: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text("Sign In"),
-                              ),
-                              icon:
-                                  isLoading
-                                      ? Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 4.0,
-                                        ),
-                                        child: SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      )
-                                      : null,
-                              onPressed:
-                                  isLoading
-                                      ? null
-                                      : () {
-                                        widget.viewModel.login.execute((
-                                          _emailController.value.text,
-                                          _passwordController.value.text,
-                                        ));
-                                      },
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  Expanded(
+                    child: FilledButton.icon(
+                      label: const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("Sign In"),
+                      ),
+                      icon:
+                          isLoading
+                              ? const Padding(
+                                padding: EdgeInsets.only(right: 4.0),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.0,
+                                  ),
+                                ),
+                              )
+                              : null,
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () {
+                                // TODO: Add form validation if needed
+                                widget.viewModel.signIn.execute((
+                                  _signInEmailController.value.text,
+                                  _signInPasswordController.value.text,
+                                ));
+                              },
+                    ),
                   ),
                 ],
+              );
+            },
+          ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextButton(
+            onPressed: _toggleForm,
+            child: Text(
+              "Don't have an account? Sign up!",
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).hintColor,
+                decoration: TextDecoration.underline,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -160,119 +257,172 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  void _onResult() {
-    if (widget.viewModel.login.completed) {
-      widget.viewModel.login.clearResult();
-      context.go(Routes.home);
-    }
-
-    if (widget.viewModel.login.error) {
-      widget.viewModel.login.clearResult();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error while trying to login"),
-          action: SnackBarAction(
-            label: "Try again",
-            onPressed:
-                () => widget.viewModel.login.execute((
-                  _emailController.value.text,
-                  _passwordController.value.text,
-                )),
+  // --- Sign Up Form Widget ---
+  Widget _buildSignUpForm(BuildContext context) {
+    return KeyedSubtree(
+      key: const ValueKey<bool>(false),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextFieldWithLabel(
+            // Add Name field
+            label: "Full Name",
+            textFieldLabel: "Juan Dela Cruz",
+            controller: _signUpNameController,
           ),
-        ),
-      );
-    }
-  }
-}
-
-class CarouselImageItem extends StatelessWidget {
-  const CarouselImageItem({super.key, required this.imageInfo});
-
-  final ImageInfo imageInfo;
-
-  @override
-  Widget build(BuildContext context) {
-    final double width = MediaQuery.sizeOf(context).width;
-    return Stack(
-      alignment: AlignmentDirectional.bottomStart,
-      children: <Widget>[
-        ClipRect(
-          child: OverflowBox(
-            maxWidth: width * 7 / 8,
-            minWidth: width * 7 / 8,
-            child: Image(
-              fit: BoxFit.cover,
-              image: NetworkImage(
-                'https://flutter.github.io/assets-for-api-docs/assets/material/${imageInfo.url}',
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextFieldWithLabel(
+            label: "Email",
+            textFieldLabel: "email@example.com",
+            controller: _signUpEmailController,
+          ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextFieldWithLabel(
+            label: "Password",
+            textFieldLabel: "Password",
+            controller: _signUpPasswordController,
+            obscureText: true,
+          ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextFieldWithLabel(
+            // Add Confirm Password field
+            label: "Confirm Password",
+            textFieldLabel: "Confirm Password",
+            controller: _signUpConfirmPasswordController,
+            obscureText: true,
+          ),
+          SizedBox(height: Dimens.paddingVertical),
+          ListenableBuilder(
+            listenable: widget.viewModel.signUp, // Listen to signUp action
+            builder: (context, _) {
+              final bool isLoading = widget.viewModel.signUp.running;
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      label: const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("Sign Up"),
+                      ),
+                      icon:
+                          isLoading
+                              ? const Padding(
+                                padding: EdgeInsets.only(right: 4.0),
+                                child: SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.0,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                              : null,
+                      onPressed:
+                          isLoading
+                              ? null
+                              : () {
+                                // TODO: Add validation (e.g., passwords match)
+                                if (_signUpPasswordController.text !=
+                                    _signUpConfirmPasswordController.text) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Passwords do not match!"),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                widget.viewModel.signUp.execute((
+                                  _signUpNameController.value.text,
+                                  _signUpEmailController.value.text,
+                                  _signUpPasswordController.value.text,
+                                ));
+                              },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          TextButton(
+            onPressed: _toggleForm,
+            child: Text(
+              "Already have an account? Sign in!",
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).hintColor,
+                decoration: TextDecoration.underline,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(18.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                imageInfo.title,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineLarge?.copyWith(color: Colors.white),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                imageInfo.subtitle,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-}
 
-enum ImageInfo {
-  image0(
-    'The Flow',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_1.png',
-  ),
-  image1(
-    'Through the Pane',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_2.png',
-  ),
-  image2(
-    'Iridescence',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_3.png',
-  ),
-  image3(
-    'Sea Change',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_4.png',
-  ),
-  image4(
-    'Blue Symphony',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_5.png',
-  ),
-  image5(
-    'When It Rains',
-    'Sponsored | Season 1 Now Streaming',
-    'content_based_color_scheme_6.png',
-  );
+  // Handle login result
+  void _onLoginResult() {
+    if (!mounted) return; // Check if widget is still in the tree
 
-  const ImageInfo(this.title, this.subtitle, this.url);
-  final String title;
-  final String subtitle;
-  final String url;
+    final loginState =
+        widget.viewModel.signIn; // Use local variable for clarity
+
+    if (loginState.completed) {
+      loginState.clearResult();
+      // Use context safely
+      if (context.mounted) {
+        // Example navigation using go_router
+        context.go(Routes.home);
+        // Or using Navigator:
+        // Navigator.of(context).pushReplacementNamed(Routes.home);
+      }
+    } else if (loginState.error) {
+      loginState.clearResult();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("Error while trying to login"),
+            action: SnackBarAction(
+              label: "Try again",
+              onPressed: () {
+                // Check if still mounted before accessing controllers/viewModel
+                if (mounted) {
+                  widget.viewModel.signIn.execute((
+                    _signInEmailController.value.text,
+                    _signInPasswordController.value.text,
+                  ));
+                }
+              },
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Handle potential sign up result (optional based on requirements)
+  void _onSignUpResult() {
+    if (!mounted) return;
+
+    final signUpState = widget.viewModel.signUp;
+
+    if (signUpState.completed) {
+      signUpState.clearResult();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Sign up successful! Please sign in.")),
+        );
+        _toggleForm();
+      }
+    } else if (signUpState.error) {
+      signUpState.clearResult();
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Error during sign up")));
+      }
+    }
+  }
 }

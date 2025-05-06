@@ -264,26 +264,18 @@ class TravelPlan {
           ), // Create new list if provided, else use existing
       // Handle setting optional fields to null explicitly if needed
       flightDetails:
-          flightDetailsOrNull != null
-              ? flightDetailsOrNull()
-              : this.flightDetails,
+          flightDetailsOrNull != null ? flightDetailsOrNull() : flightDetails,
       accommodation:
-          accommodationOrNull != null
-              ? accommodationOrNull()
-              : this.accommodation,
-      notes: notesOrNull != null ? notesOrNull() : this.notes,
+          accommodationOrNull != null ? accommodationOrNull() : accommodation,
+      notes: notesOrNull != null ? notesOrNull() : notes,
       checklist:
           checklistOrNull != null
               ? checklistOrNull()
-              : (this.checklist != null
-                  ? List.unmodifiable(this.checklist!)
-                  : null),
+              : (checklist != null ? List.unmodifiable(checklist!) : null),
       itinerary:
           itineraryOrNull != null
               ? itineraryOrNull()
-              : (this.itinerary != null
-                  ? Map.unmodifiable(this.itinerary!)
-                  : null),
+              : (itinerary != null ? Map.unmodifiable(itinerary!) : null),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

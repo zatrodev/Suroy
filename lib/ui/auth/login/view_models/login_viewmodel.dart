@@ -11,17 +11,39 @@ import '../../../../data/repositories/auth/auth_repository.dart';
 class LoginViewModel {
   LoginViewModel({required AuthRepository authRepository})
     : _authRepository = authRepository {
-    login = Command1<void, (String email, String password)>(_login);
+    signIn = Command1<void, (String email, String password)>(_signIn);
+    signUp = Command1<
+      void,
+      (String firstName, String lastName, String email, String password)
+    >(_signUp);
   }
 
   final AuthRepository _authRepository;
   final _log = Logger('LoginViewModel');
 
-  late Command1 login;
+  late Command1 signIn;
+  late Command1 signUp;
 
-  Future<Result<void>> _login((String, String) credentials) async {
+  Future<Result<void>> _signIn((String, String) credentials) async {
     final (email, password) = credentials;
     final result = await _authRepository.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    if (result is Error<void>) {
+      _log.warning('Login failed! ${result.error}');
+    }
+    return result;
+  }
+
+  Future<Result<void>> _signUp(
+    (String, String, String, String) credentials,
+  ) async {
+    final (firstName, lastName, email, password) = credentials;
+    final result = await _authRepository.signUpWithEmailAndPassword(
+      firstName: firstName,
+      lastName: lastName,
       email: email,
       password: password,
     );
