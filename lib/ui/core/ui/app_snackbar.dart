@@ -44,10 +44,15 @@ class AppSnackBar {
           ? SnackBarAction(
               label: actionLabel,
               onPressed: onPressed,
-              
               textColor: contentColor, 
             )
-          : null, 
+          : SnackBarAction(
+              label: actionLabel,
+              onPressed: () {
+                ScaffoldMessenger.of(context).clearSnackBars();
+        },
+              textColor: contentColor, 
+            )
     );
   }
 }

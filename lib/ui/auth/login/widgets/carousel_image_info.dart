@@ -26,7 +26,7 @@ enum CarouselImageInfo {
   ),
   image5(
     'Whale Sharks',
-    'Oslob, Cebu',
+    'Donsol, Sorsogon',
     'https://images.unsplash.com/photo-1580580297368-c782fb65d271?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8b3Nsb2J8ZW58MHx8MHx8fDA%3D',
   );
 

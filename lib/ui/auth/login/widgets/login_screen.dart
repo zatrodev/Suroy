@@ -78,11 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    // Remove listeners
     widget.viewModel.signIn.removeListener(_onLoginResult);
     widget.viewModel.signUp.removeListener(_onSignUpResult);
 
-    // Dispose all controllers
     _signInEmailController.dispose();
     _signInPasswordController.dispose();
     _signUpFirstNameController.dispose();
@@ -128,13 +126,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Keep Title outside the changing part
                     Text(
                       "Suroy.",
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Text(
+                      "suroy (v.) - a Cebuano word meaning \"to wander around\"",
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontStyle: FontStyle.italic,
+                        color: Theme.of(context).hintColor,
+                      ),
+                    ),
+                    SizedBox(height: Dimens.paddingVertical / 2),
                     Text(
                       "Plan your travels with ease.",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -143,25 +148,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: Dimens.paddingVertical),
 
-                    // --- Animated Form Area ---
                     AnimatedSwitcher(
-                      duration: const Duration(
-                        milliseconds: 200,
-                      ), // Animation duration
+                      duration: const Duration(milliseconds: 200),
                       transitionBuilder: (
                         Widget child,
                         Animation<double> animation,
                       ) {
-                        // Define the slide transition
                         final offsetAnimation = Tween<Offset>(
-                          begin: Offset(
-                            _isSignIn ? -1.0 : 1.0,
-                            0.0,
-                          ), // Come from left if signing IN, from right if signing UP
+                          begin: Offset(_isSignIn ? -1.0 : 1.0, 0.0),
                           end: Offset.zero,
                         ).animate(animation);
 
-                        // Use SlideTransition
                         return SlideTransition(
                           position: offsetAnimation,
                           child: child,
@@ -186,11 +183,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- Sign In Form Widget ---
   Widget _buildSignInForm(BuildContext context) {
-    // Use ValueKey to uniquely identify this widget for AnimatedSwitcher
     return KeyedSubtree(
-      key: const ValueKey<bool>(true), // Key for Sign In state
+      key: const ValueKey<bool>(true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -199,9 +194,15 @@ class _LoginScreenState extends State<LoginScreen> {
             textFieldLabel: "email@example.com",
             controller: _signInEmailController,
             validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
+              if (value == null || value.trim().isEmpty) {
+                return 'Email cannot be empty.';
               }
+
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+              if (!emailRegex.hasMatch(value.trim())) {
+                return 'Please enter a valid email address.';
+              }
+
               return null;
             },
           ),
@@ -213,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your password';
+                return 'Please enter your password.';
               }
               return null;
             },
@@ -249,11 +250,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           isLoading
                               ? null
                               : () {
-                                if (_formKey.currentState!.validate())
+                                if (_formKey.currentState!.validate()) {
                                   widget.viewModel.signIn.execute((
                                     _signInEmailController.value.text,
                                     _signInPasswordController.value.text,
                                   ));
+                                }
                               },
                     ),
                   ),
@@ -278,7 +280,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- Sign Up Form Widget ---
   Widget _buildSignUpForm(BuildContext context) {
     return KeyedSubtree(
       key: const ValueKey<bool>(false),
@@ -295,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _signUpFirstNameController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your first name';
+                      return 'Please enter your first name.';
                     }
                     return null;
                   },
@@ -308,7 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _signUpLastNameController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your last name';
+                      return 'Please enter your last name.';
                     }
                     return null;
                   },
@@ -323,12 +324,12 @@ class _LoginScreenState extends State<LoginScreen> {
             controller: _signUpEmailController,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Email cannot be empty';
+                return 'Email cannot be empty.';
               }
 
               final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
               if (!emailRegex.hasMatch(value.trim())) {
-                return 'Please enter a valid email address';
+                return 'Please enter a valid email address.';
               }
 
               return null;
@@ -340,6 +341,17 @@ class _LoginScreenState extends State<LoginScreen> {
             textFieldLabel: "Password",
             controller: _signUpPasswordController,
             obscureText: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email.';
+              }
+
+              if (value.length < 6) {
+                return 'Password length should be at least 6.';
+              }
+
+              return null;
+            },
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
@@ -391,7 +403,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       type: "error",
 
                                       onPressed: () {
-                                        // Check if still mounted before accessing controllers/viewModel
                                         if (mounted) {
                                           widget.viewModel.signIn.execute((
                                             _signInEmailController.value.text,
@@ -438,12 +449,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Handle login result
   void _onLoginResult() {
-    if (!mounted) return; // Check if widget is still in the tree
+    if (!mounted) return;
 
-    final loginState =
-        widget.viewModel.signIn; // Use local variable for clarity
+    final loginState = widget.viewModel.signIn;
 
     if (loginState.completed) {
       loginState.clearResult();
@@ -457,6 +466,7 @@ class _LoginScreenState extends State<LoginScreen> {
           AppSnackBar.show(
             context: context,
             content: const Text("Error while trying to login"),
+            actionLabel: "Try again",
             type: "error",
             onPressed: () {
               if (mounted) {
@@ -472,7 +482,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Handle potential sign up result (optional based on requirements)
   void _onSignUpResult() {
     if (!mounted) return;
 
@@ -486,14 +495,6 @@ class _LoginScreenState extends State<LoginScreen> {
             context: context,
             content: Text("Sign up successful! Please sign in."),
             type: "success",
-            onPressed: () {
-              if (mounted) {
-                widget.viewModel.signIn.execute((
-                  _signInEmailController.value.text,
-                  _signInPasswordController.value.text,
-                ));
-              }
-            },
           ),
         );
         _toggleForm();
@@ -506,15 +507,6 @@ class _LoginScreenState extends State<LoginScreen> {
             context: context,
             content: const Text("Error during sign up."),
             type: "error",
-            onPressed: () {
-              // Check if still mounted before accessing controllers/viewModel
-              if (mounted) {
-                widget.viewModel.signIn.execute((
-                  _signInEmailController.value.text,
-                  _signInPasswordController.value.text,
-                ));
-              }
-            },
           ),
         );
       }
