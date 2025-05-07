@@ -1,4 +1,4 @@
-import 'package:app/ui/auth/login/widgets/image_info.dart';
+import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
 import 'package:flutter/material.dart';
 
 class CarouselImageItem extends StatelessWidget {

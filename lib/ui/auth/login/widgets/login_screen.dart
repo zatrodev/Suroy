@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final CarouselController _carouselController = CarouselController(
-    initialItem: 1,
+    initialItem: 0,
   );
 
   final TextEditingController _signInEmailController = TextEditingController();
