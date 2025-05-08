@@ -1,7 +1,7 @@
 import 'package:app/routing/routes.dart';
 import 'package:app/ui/auth/login/view_models/login_viewmodel.dart';
 import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
-import 'package:app/ui/auth/login/widgets/carousel_images.dart';
+import 'package:app/ui/auth/login/widgets/carousel_image_item.dart';
 import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
@@ -212,6 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
             textFieldLabel: "Password",
             controller: _signInPasswordController,
             obscureText: true,
+            isPasswordType: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter your password.';
@@ -341,6 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
             textFieldLabel: "Password",
             controller: _signUpPasswordController,
             obscureText: true,
+            isPasswordType: true,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter your email.';
@@ -358,6 +360,7 @@ class _LoginScreenState extends State<LoginScreen> {
             label: "Confirm Password",
             textFieldLabel: "Confirm Password",
             controller: _signUpConfirmPasswordController,
+            isPasswordType: true,
             obscureText: true,
           ),
           SizedBox(height: Dimens.paddingVertical),

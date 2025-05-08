@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class TextFieldWithLabel extends StatelessWidget {
+class TextFieldWithLabel extends StatefulWidget {
   const TextFieldWithLabel({
     super.key,
     required this.label,
@@ -11,6 +11,7 @@ class TextFieldWithLabel extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.inputFormatters,
     this.validator,
+    this.isPasswordType = false,
   });
 
   final String label;
@@ -20,6 +21,26 @@ class TextFieldWithLabel extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
   final bool obscureText;
+  final bool isPasswordType;
+
+  @override
+  State<TextFieldWithLabel> createState() => _TextFieldWithLabelState();
+}
+
+class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
+  late bool _isObscured;
+
+  @override
+  void initState() {
+    super.initState();
+    _isObscured = widget.obscureText;
+  }
+
+  void _togglePasswordVisibility() {
+    setState(() {
+      _isObscured = !_isObscured;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +49,7 @@ class TextFieldWithLabel extends StatelessWidget {
       spacing: 8,
       children: [
         Text(
-          label,
+          widget.label,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -38,14 +59,24 @@ class TextFieldWithLabel extends StatelessWidget {
             hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
               color: Theme.of(context).colorScheme.outline,
             ),
-            hintText: textFieldLabel,
-            border: OutlineInputBorder(),
+            hintText: widget.textFieldLabel,
+            border: const OutlineInputBorder(),
+            suffixIcon:
+                widget.isPasswordType
+                    ? IconButton(
+                      icon: Icon(
+                        _isObscured ? Icons.visibility_off : Icons.visibility,
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                      onPressed: _togglePasswordVisibility,
+                    )
+                    : null,
           ),
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          controller: controller,
-          validator: validator,
-          obscureText: obscureText,
+          keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
+          controller: widget.controller,
+          validator: widget.validator,
+          obscureText: _isObscured,
         ),
       ],
     );
