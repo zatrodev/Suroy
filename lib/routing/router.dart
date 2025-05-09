@@ -1,7 +1,7 @@
 import 'package:app/data/repositories/auth/auth_repository.dart';
 import 'package:app/routing/routes.dart';
-import 'package:app/ui/auth/login/view_models/login_viewmodel.dart';
-import 'package:app/ui/auth/login/widgets/login_screen.dart';
+import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
+import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -15,8 +15,8 @@ GoRouter router(AuthRepository authRepository) => GoRouter(
     GoRoute(
       path: Routes.login,
       builder: (context, state) {
-        return LoginScreen(
-          viewModel: LoginViewModel(authRepository: context.read()),
+        return SignInScreen(
+          viewModel: SignInViewModel(authRepository: context.read()),
         );
       },
     ),

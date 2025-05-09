@@ -1,36 +1,42 @@
+import 'dart:async';
+
 import 'package:app/routing/routes.dart';
-import 'package:app/ui/auth/login/view_models/login_viewmodel.dart';
+import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
 import 'package:app/ui/auth/login/widgets/carousel_image_item.dart';
 import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
+import 'package:app/utils/result.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, required this.viewModel});
+class SignInScreen extends StatefulWidget {
+  const SignInScreen({super.key, required this.viewModel});
 
-  final LoginViewModel viewModel;
+  final SignInViewModel viewModel;
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignInScreen> createState() => _SignInScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignInScreenState extends State<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   final ScrollController _scrollController = ScrollController();
   final CarouselController _carouselController = CarouselController(
     initialItem: 1,
   );
 
-  final TextEditingController _signInEmailController = TextEditingController();
+  final TextEditingController _signInIdentifierController =
+      TextEditingController();
   final TextEditingController _signInPasswordController =
       TextEditingController();
 
   final TextEditingController _signUpFirstNameController =
       TextEditingController();
   final TextEditingController _signUpLastNameController =
+      TextEditingController();
+  final TextEditingController _signUpUsernameController =
       TextEditingController();
   final TextEditingController _signUpEmailController = TextEditingController();
   final TextEditingController _signUpPasswordController =
@@ -39,6 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
       TextEditingController();
 
   bool _isSignIn = true;
+
+  Timer? _debounce;
+  String? _usernameErrorText;
 
   void _scrollDown() {
     _scrollController.animateTo(
@@ -65,23 +74,36 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     widget.viewModel.signIn.addListener(_onLoginResult);
     widget.viewModel.signUp.addListener(_onSignUpResult);
+    widget.viewModel.isUsernameUniqueCommand.addListener(
+      _onCheckUsernameUniquenessResult,
+    );
   }
 
   @override
-  void didUpdateWidget(covariant LoginScreen oldWidget) {
+  void didUpdateWidget(covariant SignInScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     oldWidget.viewModel.signIn.removeListener(_onLoginResult);
     oldWidget.viewModel.signUp.removeListener(_onSignUpResult);
+    oldWidget.viewModel.isUsernameUniqueCommand.removeListener(
+      _onCheckUsernameUniquenessResult,
+    );
     widget.viewModel.signIn.addListener(_onLoginResult);
     widget.viewModel.signUp.addListener(_onSignUpResult);
+    widget.viewModel.isUsernameUniqueCommand.addListener(
+      _onCheckUsernameUniquenessResult,
+    );
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     widget.viewModel.signIn.removeListener(_onLoginResult);
     widget.viewModel.signUp.removeListener(_onSignUpResult);
+    widget.viewModel.isUsernameUniqueCommand.removeListener(
+      _onCheckUsernameUniquenessResult,
+    );
 
-    _signInEmailController.dispose();
+    _signInIdentifierController.dispose();
     _signInPasswordController.dispose();
     _signUpFirstNameController.dispose();
     _signUpEmailController.dispose();
@@ -92,6 +114,30 @@ class _LoginScreenState extends State<LoginScreen> {
     _carouselController.dispose();
 
     super.dispose();
+  }
+
+  void _onUsernameChanged(String username) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 700), () {
+      final trimmedUsername = username.trim();
+      if (trimmedUsername.isEmpty) {
+        // Clear any error state in the command if username is now empty
+        // This depends on how your command handles resetting state.
+        // For instance, if command has a reset method or if setting its error to null clears it.
+        // widget.viewModel.isUsernameUniqueCommand.clearError(); // Hypothetical
+        _formKey.currentState?.validate(); // Re-validate
+        return;
+      }
+      // Execute command. No need to await its result here if we are listening.
+      widget.viewModel.isUsernameUniqueCommand.execute(trimmedUsername);
+      // The ListenableBuilder will react to state changes within the command.
+      // We might still need to trigger a form validation after the command execution
+      // if the command doesn't directly set a ValueNotifier that the validator reads.
+      // However, if the command updates a ValueNotifier for errorText, and the
+      // ListenableBuilder rebuilds the TextFormField with that errorText,
+      // the visual feedback might be enough. For _formKey.currentState.validate()
+      // to pick up the error, the validator itself needs to return the error string.
+    });
   }
 
   @override
@@ -190,17 +236,12 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFieldWithLabel(
-            label: "Email",
-            textFieldLabel: "email@example.com",
-            controller: _signInEmailController,
+            label: "Username or Email",
+            textFieldLabel: "test@example.com or test",
+            controller: _signInIdentifierController,
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Email cannot be empty.';
-              }
-
-              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-              if (!emailRegex.hasMatch(value.trim())) {
-                return 'Please enter a valid email address.';
+                return 'Identifier cannot be empty.';
               }
 
               return null;
@@ -253,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               : () {
                                 if (_formKey.currentState!.validate()) {
                                   widget.viewModel.signIn.execute((
-                                    _signInEmailController.value.text,
+                                    _signInIdentifierController.value.text,
                                     _signInPasswordController.value.text,
                                   ));
                                 }
@@ -317,6 +358,47 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ],
+          ),
+          SizedBox(height: Dimens.paddingVertical / 2),
+          ListenableBuilder(
+            listenable: widget.viewModel.isUsernameUniqueCommand,
+            builder: (context, child) {
+              final isLoading =
+                  widget.viewModel.isUsernameUniqueCommand.running;
+              return TextFieldWithLabel(
+                label: "Username",
+                textFieldLabel: "Enter your username",
+                controller: _signUpUsernameController,
+                onChanged: _onUsernameChanged,
+                validator: (value) {
+                  final trimmedValue = value?.trim() ?? '';
+                  if (trimmedValue.isEmpty) {
+                    return 'Username cannot be empty.';
+                  }
+                  if (trimmedValue.length < 3) {
+                    return 'Username must be at least 3 characters.';
+                  }
+
+                  if (_usernameErrorText != null &&
+                      trimmedValue == _signUpUsernameController.text.trim()) {
+                    return _usernameErrorText;
+                  }
+
+                  return null;
+                },
+                suffixIcon:
+                    isLoading
+                        ? const Padding(
+                          padding: EdgeInsets.all(10.0),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2.0),
+                          ),
+                        )
+                        : null,
+              );
+            },
           ),
           SizedBox(height: Dimens.paddingVertical / 2),
           TextFieldWithLabel(
@@ -408,7 +490,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                       onPressed: () {
                                         if (mounted) {
                                           widget.viewModel.signIn.execute((
-                                            _signInEmailController.value.text,
+                                            _signInIdentifierController
+                                                .value
+                                                .text,
                                             _signInPasswordController
                                                 .value
                                                 .text,
@@ -424,6 +508,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   widget.viewModel.signUp.execute((
                                     _signUpFirstNameController.value.text,
                                     _signUpLastNameController.value.text,
+                                    _signUpUsernameController.value.text,
                                     _signUpEmailController.value.text,
                                     _signUpPasswordController.value.text,
                                   ));
@@ -474,7 +559,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () {
               if (mounted) {
                 widget.viewModel.signIn.execute((
-                  _signInEmailController.value.text,
+                  _signInIdentifierController.value.text,
                   _signInPasswordController.value.text,
                 ));
               }
@@ -496,11 +581,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           AppSnackBar.show(
             context: context,
-            content: Text("Sign up successful! Please sign in."),
+            content: Text("Sign up successful! "),
             type: "success",
           ),
         );
-        _toggleForm();
+
+        context.go(Routes.home);
       }
     } else if (signUpState.error) {
       signUpState.clearResult();
@@ -512,6 +598,40 @@ class _LoginScreenState extends State<LoginScreen> {
             type: "error",
           ),
         );
+      }
+    }
+  }
+
+  void _onCheckUsernameUniquenessResult() {
+    if (!mounted) return;
+
+    final state = widget.viewModel.isUsernameUniqueCommand;
+    if (state.completed) {
+      final result = state.result;
+      if (result == null) {
+        state.clearResult();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            AppSnackBar.show(
+              context: context,
+              content: const Text("Error during check username uniquness."),
+              type: "error",
+            ),
+          );
+        }
+        return;
+      }
+
+      switch (result) {
+        case Ok():
+          if (result.value) {
+            _usernameErrorText = null;
+          } else {
+            _usernameErrorText =
+                '"${_signUpUsernameController.text.trim()}" is already taken.';
+          }
+        case Error():
+          _usernameErrorText = 'Error: Check username failed.';
       }
     }
   }

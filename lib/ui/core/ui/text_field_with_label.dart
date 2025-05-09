@@ -11,7 +11,9 @@ class TextFieldWithLabel extends StatefulWidget {
     this.keyboardType = TextInputType.text,
     this.inputFormatters,
     this.validator,
+    this.onChanged,
     this.isPasswordType = false,
+    this.suffixIcon,
   });
 
   final String label;
@@ -20,8 +22,10 @@ class TextFieldWithLabel extends StatefulWidget {
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
+  final ValueChanged<String>? onChanged;
   final bool obscureText;
   final bool isPasswordType;
+  final Widget? suffixIcon;
 
   @override
   State<TextFieldWithLabel> createState() => _TextFieldWithLabelState();
@@ -44,6 +48,17 @@ class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
 
   @override
   Widget build(BuildContext context) {
+    Widget? effectiveSuffixIcon = widget.suffixIcon; // Prioritize custom suffix
+    if (effectiveSuffixIcon == null && widget.isPasswordType) {
+      effectiveSuffixIcon = IconButton(
+        icon: Icon(
+          _isObscured ? Icons.visibility_off : Icons.visibility,
+          color: Theme.of(context).colorScheme.outline,
+        ),
+        onPressed: _togglePasswordVisibility,
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 8,
@@ -61,22 +76,15 @@ class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
             ),
             hintText: widget.textFieldLabel,
             border: const OutlineInputBorder(),
-            suffixIcon:
-                widget.isPasswordType
-                    ? IconButton(
-                      icon: Icon(
-                        _isObscured ? Icons.visibility_off : Icons.visibility,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
-                      onPressed: _togglePasswordVisibility,
-                    )
-                    : null,
+            suffixIcon: effectiveSuffixIcon,
           ),
           keyboardType: widget.keyboardType,
           inputFormatters: widget.inputFormatters,
           controller: widget.controller,
           validator: widget.validator,
           obscureText: _isObscured,
+          onChanged: widget.onChanged,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
         ),
       ],
     );

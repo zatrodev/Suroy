@@ -1,4 +1,5 @@
 import 'package:app/data/services/firebase/auth/auth_service.dart';
+import 'package:app/data/services/firebase/user/user_model.dart';
 import 'package:app/utils/result.dart'; // Assuming your Result class is here
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
@@ -14,13 +15,13 @@ class AuthRepository extends ChangeNotifier {
   bool get isAuthenticated => currentUser != null;
   Stream<User?> get authStateChanges => _authService.authStateChanges;
 
-  Future<Result<void>> signInWithEmailAndPassword({
-    required String email,
+  Future<Result<void>> signInWithEmailOrUsernameAndPassword({
+    required String identifier,
     required String password,
   }) async {
     try {
-      return _authService.signInWithEmailAndPassword(
-        email: email,
+      return _authService.signInWithEmailOrUsernameAndPassword(
+        identifier: identifier,
         password: password,
       );
     } on Exception catch (error) {
@@ -33,6 +34,9 @@ class AuthRepository extends ChangeNotifier {
     required String password,
     required String firstName,
     required String lastName,
+    required String username,
+    List<Interest> interests = const [],
+    List<TravelStyle> travelStyle = const [],
   }) async {
     try {
       return _authService.signUpWithEmailAndPassword(
@@ -40,6 +44,9 @@ class AuthRepository extends ChangeNotifier {
         password: password,
         firstName: firstName,
         lastName: lastName,
+        username: username,
+        interests: interests,
+        travelStyles: travelStyle,
       );
     } on Exception catch (error) {
       return Result.error(error);
@@ -57,5 +64,14 @@ class AuthRepository extends ChangeNotifier {
     notifyListeners();
 
     return finalResult;
+  }
+
+  Future<Result<bool>> isUsernameUnique(String username) async {
+    try {
+      return Result.ok(await _authService.isUsernameUnique(username));
+    } on Exception catch (error) {
+      print('Error checking username uniqueness: $error');
+      return Result.error(error);
+    }
   }
 }
