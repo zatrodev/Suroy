@@ -16,7 +16,11 @@ GoRouter router(AuthRepository authRepository) => GoRouter(
       path: Routes.login,
       builder: (context, state) {
         return SignInScreen(
-          viewModel: SignInViewModel(authRepository: context.read()),
+          viewModel: SignInViewModel(
+            userRepository: context.read(),
+            signInUseCase: context.read(),
+            signUpUseCase: context.read(),
+          ),
         );
       },
     ),
