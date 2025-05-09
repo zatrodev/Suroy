@@ -8,7 +8,51 @@ enum Interest {
   sports,
   music,
   reading,
-  photography,
+  photography; // Semicolon needed before getters/methods
+
+  /// Returns a user-friendly display name for the interest.
+  String get displayName {
+    switch (this) {
+      case Interest.hiking:
+        return 'Hiking';
+      case Interest.technology:
+        return 'Technology';
+      case Interest.cooking:
+        return 'Cooking';
+      case Interest.arts:
+        return 'Arts & Crafts';
+      case Interest.sports:
+        return 'Sports';
+      case Interest.music:
+        return 'Music';
+      case Interest.reading:
+        return 'Reading';
+      case Interest.photography:
+        return 'Photography';
+    }
+  }
+
+  /// Returns an emoji string associated with the interest.
+  String get emoji {
+    switch (this) {
+      case Interest.hiking:
+        return '⛰️'; // Mountain emoji
+      case Interest.technology:
+        return '💻'; // Laptop emoji
+      case Interest.cooking:
+        return '🍳'; // Cooking emoji (pan with egg)
+      case Interest.arts:
+        return '🎨'; // Artist palette
+      case Interest.sports:
+        return '⚽'; // Soccer ball
+      case Interest.music:
+        return '🎵'; // Musical note
+      case Interest.reading:
+        return '📚'; // Books
+      case Interest.photography:
+        return '📸'; // Camera with flash
+    }
+  }
 }
 
 enum TravelStyle {
@@ -19,7 +63,51 @@ enum TravelStyle {
   cultural,
   solo,
   group,
-  family,
+  family; // Semicolon needed before getters/methods
+
+  /// Returns a user-friendly display name for the travel style.
+  String get displayName {
+    switch (this) {
+      case TravelStyle.luxury:
+        return 'Luxury';
+      case TravelStyle.budget:
+        return 'Budget-Friendly';
+      case TravelStyle.adventure:
+        return 'Adventure';
+      case TravelStyle.relaxation:
+        return 'Relaxation';
+      case TravelStyle.cultural:
+        return 'Cultural Immersion';
+      case TravelStyle.solo:
+        return 'Solo Travel';
+      case TravelStyle.group:
+        return 'Group Travel';
+      case TravelStyle.family:
+        return 'Family Travel';
+    }
+  }
+
+  /// Returns an emoji string associated with the travel style.
+  String get emoji {
+    switch (this) {
+      case TravelStyle.luxury:
+        return '💎'; // Gem stone
+      case TravelStyle.budget:
+        return '💰'; // Money bag
+      case TravelStyle.adventure:
+        return '🧗'; // Person climbing / Compass (🧭)
+      case TravelStyle.relaxation:
+        return '🧘'; // Person in lotus position / Beach with umbrella (🏖️)
+      case TravelStyle.cultural:
+        return '🏛️'; // Classical building / Globe showing Asia-Australia (🌏)
+      case TravelStyle.solo:
+        return '🚶'; // Person walking
+      case TravelStyle.group:
+        return '👥'; // Busts in silhouette (group)
+      case TravelStyle.family:
+        return '👨‍👩‍👧‍👦'; // Family emoji
+    }
+  }
 }
 
 class UserModel {

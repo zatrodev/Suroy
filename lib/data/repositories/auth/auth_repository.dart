@@ -1,77 +1,65 @@
-import 'package:app/data/services/firebase/auth/auth_service.dart';
-import 'package:app/data/services/firebase/user/user_model.dart';
-import 'package:app/utils/result.dart'; // Assuming your Result class is here
+import 'package:app/utils/result.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 
 class AuthRepository extends ChangeNotifier {
-  final AuthService _authService;
-
-  AuthRepository({required AuthService authService})
-    : _authService = authService;
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   // NOTE: maybe currentUser will not get automatically updated by Firebase so direct assignment is needed
-  User? get currentUser => _authService.currentUser;
+  User? get currentUser => _firebaseAuth.currentUser;
   bool get isAuthenticated => currentUser != null;
-  Stream<User?> get authStateChanges => _authService.authStateChanges;
+  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  Future<Result<void>> signInWithEmailOrUsernameAndPassword({
-    required String identifier,
+  Future<Result<UserCredential>> signInWithEmailAndPassword({
+    required String email,
     required String password,
   }) async {
     try {
-      return _authService.signInWithEmailOrUsernameAndPassword(
-        identifier: identifier,
-        password: password,
-      );
+      UserCredential userCredential = await _firebaseAuth
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      print("User signed in: ${userCredential.user?.uid}");
+      return Result.ok(userCredential);
     } on Exception catch (error) {
       return Result.error(error);
     }
   }
 
-  Future<Result<void>> signUpWithEmailAndPassword({
+  Future<Result<UserCredential>> signUpWithEmailAndPassword({
     required String email,
     required String password,
-    required String firstName,
-    required String lastName,
-    required String username,
-    List<Interest> interests = const [],
-    List<TravelStyle> travelStyle = const [],
   }) async {
     try {
-      return _authService.signUpWithEmailAndPassword(
-        email: email,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-        username: username,
-        interests: interests,
-        travelStyles: travelStyle,
-      );
+      UserCredential userCredential = await _firebaseAuth
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      print("User created: ${userCredential.user?.uid}");
+      return Result.ok(userCredential);
     } on Exception catch (error) {
       return Result.error(error);
     }
   }
 
   Future<Result<void>> signOut() async {
-    final result = await _authService.signOut();
-
-    final finalResult = switch (result) {
-      Ok() => const Result.ok(()),
-      Error(error: final exception) => Result.error(exception),
-    };
-
-    notifyListeners();
-
-    return finalResult;
-  }
-
-  Future<Result<bool>> isUsernameUnique(String username) async {
     try {
-      return Result.ok(await _authService.isUsernameUnique(username));
+      return Result.ok(await _firebaseAuth.signOut());
+    } on FirebaseAuthException catch (error) {
+      print(
+        "Error signing out (FirebaseAuthException): ${error.code} - ${error.message}",
+      );
+      return Result.error(error);
     } on Exception catch (error) {
-      print('Error checking username uniqueness: $error');
+      print("General error signing out: $error");
       return Result.error(error);
     }
   }
+
+  //Future<Result<bool>> isUsernameUnique(String username) async {
+  //  try {
+  //    return Result.ok(await _authService.isUsernameUnique(username));
+  //  } on Exception catch (error) {
+  //    print('Error checking username uniqueness: $error');
+  //    return Result.error(error);
+  //  }
+  //}
 }
