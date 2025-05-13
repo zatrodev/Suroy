@@ -33,7 +33,7 @@ class AuthSignUpUseCase {
         case Ok<UserCredential>():
           final user = signUpResult.value.user;
           if (user != null) {
-            final newUser = UserModel(
+            final newUser = UserFirebaseModel(
               id: user.uid,
               firstName: firstName,
               lastName: lastName,
@@ -54,7 +54,7 @@ class AuthSignUpUseCase {
             );
           }
         case Error<UserCredential>():
-          return Result.error(Exception("Sign up error."));
+          return Result.error(signUpResult.error);
       }
     } on Exception catch (error) {
       print("General sign up error: $error");

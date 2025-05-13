@@ -8,9 +8,8 @@ enum Interest {
   sports,
   music,
   reading,
-  photography; // Semicolon needed before getters/methods
+  photography;
 
-  /// Returns a user-friendly display name for the interest.
   String get displayName {
     switch (this) {
       case Interest.hiking:
@@ -32,25 +31,24 @@ enum Interest {
     }
   }
 
-  /// Returns an emoji string associated with the interest.
   String get emoji {
     switch (this) {
       case Interest.hiking:
-        return '⛰️'; // Mountain emoji
+        return '⛰️';
       case Interest.technology:
-        return '💻'; // Laptop emoji
+        return '💻';
       case Interest.cooking:
-        return '🍳'; // Cooking emoji (pan with egg)
+        return '🍳';
       case Interest.arts:
-        return '🎨'; // Artist palette
+        return '🎨';
       case Interest.sports:
-        return '⚽'; // Soccer ball
+        return '⚽';
       case Interest.music:
-        return '🎵'; // Musical note
+        return '🎵';
       case Interest.reading:
-        return '📚'; // Books
+        return '📚';
       case Interest.photography:
-        return '📸'; // Camera with flash
+        return '📸';
     }
   }
 }
@@ -63,9 +61,8 @@ enum TravelStyle {
   cultural,
   solo,
   group,
-  family; // Semicolon needed before getters/methods
+  family;
 
-  /// Returns a user-friendly display name for the travel style.
   String get displayName {
     switch (this) {
       case TravelStyle.luxury:
@@ -87,43 +84,42 @@ enum TravelStyle {
     }
   }
 
-  /// Returns an emoji string associated with the travel style.
   String get emoji {
     switch (this) {
       case TravelStyle.luxury:
-        return '💎'; // Gem stone
+        return '💎';
       case TravelStyle.budget:
-        return '💰'; // Money bag
+        return '💰';
       case TravelStyle.adventure:
-        return '🧗'; // Person climbing / Compass (🧭)
+        return '🧗';
       case TravelStyle.relaxation:
-        return '🧘'; // Person in lotus position / Beach with umbrella (🏖️)
+        return '🧘';
       case TravelStyle.cultural:
-        return '🏛️'; // Classical building / Globe showing Asia-Australia (🌏)
+        return '🏛️';
       case TravelStyle.solo:
-        return '🚶'; // Person walking
+        return '🚶';
       case TravelStyle.group:
-        return '👥'; // Busts in silhouette (group)
+        return '👥';
       case TravelStyle.family:
-        return '👨‍👩‍👧‍👦'; // Family emoji
+        return '👨‍👩‍👧‍👦';
     }
   }
 }
 
-class UserModel {
+class UserFirebaseModel {
   final String id;
   String firstName;
   String lastName;
   String username;
   String email;
-  List<Interest> interests; // Could be List<Interest> if using enums
-  List<TravelStyle> travelStyles; // Could be List<TravelStyle> if using enums
+  List<Interest> interests;
+  List<TravelStyle> travelStyles;
   DateTime createdAt;
   DateTime updatedAt;
   String? phoneNumber;
   String? avatar;
 
-  UserModel({
+  UserFirebaseModel({
     required this.id,
     required this.firstName,
     required this.lastName,
@@ -139,25 +135,22 @@ class UserModel {
 
   String get fullName => '$firstName $lastName';
 
-  // --- Firestore Serialization ---
-
   Map<String, dynamic> toJson() {
     return {
-      // 'id' is typically not stored in the document data itself, but is the document's ID.
       'firstName': firstName,
       'lastName': lastName,
       'username': username,
       'phoneNumber': phoneNumber,
       'email': email,
-      'interests': interests, // Firestore handles List<Interest> directly
-      'travelStyles': travelStyles,
+      'interests': interests.map((interest) => interest.name).toList(),
+      'travelStyles': travelStyles.map((style) => style.name).toList(),
       'avatar': avatar,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  factory UserModel.fromFirestore(
+  factory UserFirebaseModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> snapshot,
   ) {
     final data = snapshot.data();
@@ -165,7 +158,7 @@ class UserModel {
       throw StateError('Missing data for User ID: ${snapshot.id}');
     }
 
-    return UserModel(
+    return UserFirebaseModel(
       id: snapshot.id,
       firstName: data['firstName'] ?? '',
       lastName: data['lastName'] ?? '',
@@ -179,7 +172,7 @@ class UserModel {
     );
   }
 
-  UserModel copyWith({
+  UserFirebaseModel copyWith({
     String? id,
     String? firstName,
     String? lastName,
@@ -192,7 +185,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
-    return UserModel(
+    return UserFirebaseModel(
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,

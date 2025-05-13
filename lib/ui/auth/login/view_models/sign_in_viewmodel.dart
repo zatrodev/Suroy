@@ -1,8 +1,7 @@
-import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
+import 'package:app/domain/models/user.dart';
 import 'package:app/domain/use-cases/auth/auth_sign_in_use_case.dart';
 import 'package:app/domain/use-cases/auth/auth_sign_up_use_case.dart';
-import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/utils/command.dart';
 import 'package:app/utils/result.dart';
 import 'package:logging/logging.dart';
@@ -16,7 +15,7 @@ class SignInViewModel {
        _signInUseCase = signInUseCase,
        _signUpUseCase = signUpUseCase {
     signIn = Command1<void, (String identifier, String password)>(_signIn);
-    signUp = Command1<void, UserSignUpRequest>(_signUp);
+    signUp = Command1<void, User>(_signUp);
     isUsernameUnique = Command1<bool, String>(_checkUsernameUniqueness);
   }
 
@@ -38,11 +37,13 @@ class SignInViewModel {
 
     if (result is Error<void>) {
       _log.warning('Login failed! ${result.error}');
+      return Result.error(result.error);
     }
+
     return result;
   }
 
-  Future<Result<void>> _signUp(UserSignUpRequest user) async {
+  Future<Result<void>> _signUp(User user) async {
     final result = await _signUpUseCase.signUp(
       firstName: user.firstName,
       lastName: user.lastName,
@@ -55,6 +56,7 @@ class SignInViewModel {
 
     if (result is Error<void>) {
       _log.warning('Sign up failed! ${result.error}');
+      return Result.error(result.error);
     }
 
     return result;

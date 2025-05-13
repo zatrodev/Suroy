@@ -35,6 +35,17 @@ class AuthRepository extends ChangeNotifier {
 
       print("User created: ${userCredential.user?.uid}");
       return Result.ok(userCredential);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == "email-already-in-use") {
+        return Result.error(
+          FirebaseAuthException(
+            code: error.code,
+            message: "Email already in use.",
+          ),
+        );
+      }
+
+      return Result.error(error);
     } on Exception catch (error) {
       return Result.error(error);
     }
@@ -53,13 +64,4 @@ class AuthRepository extends ChangeNotifier {
       return Result.error(error);
     }
   }
-
-  //Future<Result<bool>> isUsernameUnique(String username) async {
-  //  try {
-  //    return Result.ok(await _authService.isUsernameUnique(username));
-  //  } on Exception catch (error) {
-  //    print('Error checking username uniqueness: $error');
-  //    return Result.error(error);
-  //  }
-  //}
 }

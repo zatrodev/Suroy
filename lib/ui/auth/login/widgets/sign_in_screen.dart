@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app/data/repositories/user/user_model.dart';
+import 'package:app/domain/models/user.dart';
 import 'package:app/routing/routes.dart';
 import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/ui/auth/login/widgets/carousel_image_info.dart';
@@ -12,72 +13,6 @@ import 'package:app/ui/core/ui/text_field_with_label.dart';
 import 'package:app/utils/result.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-class UserSignUpRequest {
-  final String firstName;
-  final String lastName;
-  final String username;
-  final String email;
-  final String
-  password; // Raw password, hashing should be done server-side or securely client-side if absolutely necessary (less ideal)
-  final List<Interest> interests;
-  final List<TravelStyle> travelStyles;
-
-  UserSignUpRequest({
-    required this.firstName,
-    required this.lastName,
-    required this.username,
-    required this.email,
-    required this.password,
-    required this.interests,
-    required this.travelStyles,
-  });
-
-  // Optional: toJson method if you need to send this as JSON to an API
-  Map<String, dynamic> toJson() {
-    return {
-      'firstName': firstName,
-      'lastName': lastName,
-      'username': username,
-      'email': email,
-      'password': password, // Be mindful of sending raw passwords
-      'interests':
-          interests
-              .map((interest) => interest.name)
-              .toList(), // Sending names or IDs
-      'travelStyles':
-          travelStyles
-              .map((style) => style.name)
-              .toList(), // Sending names or IDs
-    };
-  }
-
-  // Optional: A copyWith method for convenience if needed
-  UserSignUpRequest copyWith({
-    String? firstName,
-    String? lastName,
-    String? username,
-    String? email,
-    String? password,
-    List<Interest>? interests,
-    List<TravelStyle>? travelStyles,
-  }) {
-    return UserSignUpRequest(
-      firstName: firstName ?? this.firstName,
-      lastName: lastName ?? this.lastName,
-      username: username ?? this.username,
-      email: email ?? this.email,
-      password: password ?? this.password,
-      interests: interests ?? this.interests,
-      travelStyles: travelStyles ?? this.travelStyles,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'UserSignUpRequest(firstName: $firstName, lastName: $lastName, username: $username, email: $email, interests: $interests, travelStyles: $travelStyles)';
-  }
-}
 
 enum SignUpPage { credentials, interests, travelStyles }
 
@@ -249,17 +184,18 @@ class _SignInScreenState extends State<SignInScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: Dimens.paddingVertical * 2),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: height / 3),
-              child: CarouselView.weighted(
-                controller: _carouselController,
-                itemSnapping: true,
-                flexWeights: const <int>[1, 7, 1],
-                children:
-                    CarouselImageInfo.values.map((CarouselImageInfo image) {
-                      return CarouselImageItem(imageInfo: image);
-                    }).toList(),
+            SafeArea(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: height / 3),
+                child: CarouselView.weighted(
+                  controller: _carouselController,
+                  itemSnapping: true,
+                  flexWeights: const <int>[1, 7, 1],
+                  children:
+                      CarouselImageInfo.values.map((CarouselImageInfo image) {
+                        return CarouselImageItem(imageInfo: image);
+                      }).toList(),
+                ),
               ),
             ),
             Padding(
@@ -731,7 +667,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           ? null
                           : () {
                             widget.viewModel.signUp.execute(
-                              UserSignUpRequest(
+                              User(
                                 firstName:
                                     _signUpFirstNameController.text.trim(),
                                 lastName: _signUpLastNameController.text.trim(),
@@ -799,16 +735,17 @@ class _SignInScreenState extends State<SignInScreen> {
         context.go(Routes.home);
       }
     } else if (signUpState.error) {
-      signUpState.clearResult();
+      final errorMessage = (signUpState.result as Error).error;
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           AppSnackBar.show(
             context: context,
-            content: const Text("Error during sign up."),
+            content: Text("Error during sign up: $errorMessage"),
             type: "error",
           ),
         );
       }
+      signUpState.clearResult();
     }
   }
 

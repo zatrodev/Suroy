@@ -7,7 +7,7 @@ class UserRepository extends FirestoreService {
   UserRepository({required super.firestoreInstance})
     : super(collectionName: 'users');
 
-  Future<Result<void>> createUser(UserModel user) async {
+  Future<Result<void>> createUser(UserFirebaseModel user) async {
     try {
       return Result.ok(
         await collectionReference.doc(user.id).set(user.toJson()),
