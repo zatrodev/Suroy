@@ -1,3 +1,4 @@
+import 'package:app/domain/models/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum Interest {
@@ -158,6 +159,24 @@ class UserFirebaseModel {
       throw StateError('Missing data for User ID: ${snapshot.id}');
     }
 
+    List<Interest> interestsList =
+        (data['interests'] as List<dynamic>? ?? [])
+            .map(
+              (interestName) => Interest.values.firstWhere(
+                (elem) => elem.name == interestName,
+              ),
+            )
+            .toList();
+
+    List<TravelStyle> travelStyleList =
+        (data['travelStyles'] as List<dynamic>? ?? [])
+            .map(
+              (travelStyleName) => TravelStyle.values.firstWhere(
+                (elem) => elem.name == travelStyleName,
+              ),
+            )
+            .toList();
+
     return UserFirebaseModel(
       id: snapshot.id,
       firstName: data['firstName'] ?? '',
@@ -165,8 +184,8 @@ class UserFirebaseModel {
       username: data['username'] ?? '',
       phoneNumber: data['phoneNumber'] ?? '',
       email: data['email'] ?? '',
-      interests: List<Interest>.from(data['interests'] ?? []),
-      travelStyles: List<TravelStyle>.from(data['travelStyles'] ?? []),
+      interests: interestsList,
+      travelStyles: travelStyleList,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -197,6 +216,19 @@ class UserFirebaseModel {
       travelStyles: travelStyles ?? this.travelStyles,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  User toUser() {
+    return User(
+      firstName: firstName,
+      lastName: lastName,
+      username: username,
+      email: email,
+      phoneNumber: phoneNumber,
+      avatar: avatar,
+      interests: interests,
+      travelStyles: travelStyles,
     );
   }
 }
