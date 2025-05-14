@@ -4,6 +4,7 @@ import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/ui/home/home.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
+import 'package:app/ui/home/profile/view_models/profile_viewmodel.dart';
 import 'package:app/ui/home/profile/widgets/profile_screen.dart';
 import 'package:app/ui/home/social/widgets/social_screen.dart';
 import 'package:flutter/material.dart';
@@ -93,8 +94,12 @@ GoRouter router(AuthRepository authRepository) {
                 pageBuilder:
                     (context, state) => NoTransitionPage(
                       key: state.pageKey,
-                      child: const ProfileScreen(
-                        /* viewModel: context.read<ProfileViewModel>() */
+                      child: ProfileScreen(
+                        viewModel: ProfileViewModel(
+                          updateAvatarUseCase: context.read(),
+                          authRepository: context.read(),
+                          userRepository: context.read(),
+                        ),
                       ),
                     ),
               ),
