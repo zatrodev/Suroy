@@ -3,6 +3,7 @@ import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
 import 'package:app/utils/result.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:app/domain/models/user.dart' as local;
 
 class AuthSignUpUseCase {
   AuthSignUpUseCase({
@@ -14,34 +15,26 @@ class AuthSignUpUseCase {
   final AuthRepository _authRepository;
   final UserRepository _userRepository;
 
-  Future<Result<void>> signUp({
-    required String firstName,
-    required String lastName,
-    required String username,
-    required String email,
-    required String password,
-    List<Interest> interests = const [],
-    List<TravelStyle> travelStyles = const [],
-  }) async {
+  Future<Result<void>> signUp(local.User user) async {
     try {
       final signUpResult = await _authRepository.signUpWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: user.email,
+        password: user.password!,
       );
 
       switch (signUpResult) {
         case Ok<UserCredential>():
-          final user = signUpResult.value.user;
-          if (user != null) {
+          final userFromFirebase = signUpResult.value.user;
+          if (userFromFirebase != null) {
             final newUser = UserFirebaseModel(
-              id: user.uid,
-              firstName: firstName,
-              lastName: lastName,
-              username: username,
+              id: userFromFirebase.uid,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              username: user.username,
               phoneNumber: user.phoneNumber,
-              email: email,
-              interests: interests,
-              travelStyles: travelStyles,
+              email: user.email,
+              interests: user.interests,
+              travelStyles: user.travelStyles,
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             );

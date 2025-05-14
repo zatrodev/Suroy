@@ -24,9 +24,9 @@ class SignInViewModel {
   final AuthSignUpUseCase _signUpUseCase;
   final _log = Logger('SignInViewModel');
 
-  late Command1 signIn;
-  late Command1 signUp;
-  late Command1 isUsernameUnique;
+  late Command1<void, (String identifier, String password)> signIn;
+  late Command1<void, User> signUp;
+  late Command1<bool, String> isUsernameUnique;
 
   Future<Result<void>> _signIn((String, String) credentials) async {
     final (identifier, password) = credentials;
@@ -44,15 +44,7 @@ class SignInViewModel {
   }
 
   Future<Result<void>> _signUp(User user) async {
-    final result = await _signUpUseCase.signUp(
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      email: user.email,
-      password: user.password,
-      interests: user.interests,
-      travelStyles: user.travelStyles,
-    );
+    final result = await _signUpUseCase.signUp(user);
 
     if (result is Error<void>) {
       _log.warning('Sign up failed! ${result.error}');
