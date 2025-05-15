@@ -5,7 +5,9 @@ class User {
   final String lastName;
   final String username;
   final String email;
-  final String password;
+  final String? password;
+  final String? phoneNumber;
+  final String? avatar;
   final List<Interest> interests;
   final List<TravelStyle> travelStyles;
 
@@ -14,10 +16,22 @@ class User {
     required this.lastName,
     required this.username,
     required this.email,
-    required this.password,
-    required this.interests,
-    required this.travelStyles,
+    this.password,
+    this.phoneNumber,
+    this.avatar,
+    this.interests = const [],
+    this.travelStyles = const [],
   });
+
+  String get initials {
+    String result = "";
+    if (firstName.isNotEmpty) result += firstName[0];
+    if (lastName.isNotEmpty) {
+      if (result.isNotEmpty && lastName[0].isNotEmpty) result += "";
+      result += lastName[0];
+    }
+    return result.toUpperCase();
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -37,6 +51,8 @@ class User {
     String? username,
     String? email,
     String? password,
+    String? phoneNumber,
+    String? avatar,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
   }) {
@@ -46,6 +62,8 @@ class User {
       username: username ?? this.username,
       email: email ?? this.email,
       password: password ?? this.password,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      avatar: avatar ?? this.avatar,
       interests: interests ?? this.interests,
       travelStyles: travelStyles ?? this.travelStyles,
     );
@@ -53,6 +71,6 @@ class User {
 
   @override
   String toString() {
-    return 'UserSignUpRequest(firstName: $firstName, lastName: $lastName, username: $username, email: $email, interests: $interests, travelStyles: $travelStyles)';
+    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, interests: $interests, travelStyles: $travelStyles)';
   }
 }

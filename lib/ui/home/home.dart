@@ -96,8 +96,8 @@ class Home extends StatelessWidget {
             label: 'Profile',
           ),
         ],
-        selectedItemColor: Theme.of(context).primaryColor, // Match your theme
-        unselectedItemColor: Theme.of(context).primaryColor,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.primary,
         showUnselectedLabels: true, // Recommended for clarity
         type:
             BottomNavigationBarType.fixed, // Ensures labels are always visible

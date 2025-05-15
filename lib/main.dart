@@ -16,18 +16,19 @@ void main() async {
     print('${record.level.name}: ${record.time}: ${record.message}');
   });
 
-  runApp(MultiProvider(providers: providers, child: const MainApp()));
+  runApp(MultiProvider(providers: providers, child: MainApp()));
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  MainApp({super.key});
 
-  // This widget is the root of your application.
+  final appTheme = AppTheme(TextTheme());
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: appTheme.light(),
+      darkTheme: appTheme.dark(),
       themeMode: ThemeMode.system,
       routerConfig: router(context.read()),
     );

@@ -49,7 +49,7 @@ class SignInViewModel {
       lastName: user.lastName,
       username: user.username,
       email: user.email,
-      password: user.password,
+      password: user.password!,
       interests: user.interests,
       travelStyles: user.travelStyles,
     );

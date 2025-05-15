@@ -16,7 +16,7 @@ abstract final class AppColors {
 
   static const lightColorScheme = ColorScheme(
     brightness: Brightness.light,
-    primary: AppColors.black1,
+    primary: AppColors.red1,
     onPrimary: AppColors.white1,
     secondary: AppColors.black1,
     onSecondary: AppColors.white1,
@@ -28,7 +28,7 @@ abstract final class AppColors {
 
   static const darkColorScheme = ColorScheme(
     brightness: Brightness.dark,
-    primary: AppColors.white1,
+    primary: AppColors.red1,
     onPrimary: AppColors.black1,
     secondary: AppColors.white1,
     onSecondary: AppColors.black1,

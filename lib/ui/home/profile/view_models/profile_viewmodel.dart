@@ -55,6 +55,7 @@ class ProfileViewModel {
     switch (result) {
       case Ok<User>():
         _user = result.value;
+        print("FETCHED USER: ${_user?.avatar}");
         break;
       case Error<User>():
         _log.severe("Failed to load profile: ${result.error}");
@@ -79,7 +80,7 @@ class ProfileViewModel {
     if (result is Ok<String>) {
       final newImageUrl = result.value;
       _user = _user?.copyWith(avatar: newImageUrl);
-      _log.info("Profile picture updated successfully. New URL: $newImageUrl");
+      _log.info("Profile picture updated successfully.");
     } else if (result is Error<String>) {
       _log.severe("Failed to update profile picture: ${result.error}");
     }

@@ -1,12 +1,14 @@
-// lib/ui/home/profile/profile_screen.dart
-import 'package:app/domain/models/user.dart'; // Your domain User model
+import 'package:app/domain/models/user.dart';
+import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/home/profile/view_models/profile_viewmodel.dart';
+import 'package:app/utils/convert_to_base64.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:app/utils/result.dart' as R; // Aliased to avoid conflict
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.viewModel});
+
   final ProfileViewModel viewModel;
 
   @override
@@ -17,33 +19,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Add listeners to the commands
     widget.viewModel.loadUser.addListener(_onViewModelUpdate);
     widget.viewModel.changeAvatar.addListener(_onViewModelUpdate);
-    widget.viewModel.signOut.addListener(_onViewModelUpdate); // Or a specific handler for sign-out
+    widget.viewModel.signOut.addListener(_onViewModelUpdate);
   }
 
   @override
   void dispose() {
-    // Remove listeners to prevent memory leaks
     widget.viewModel.loadUser.removeListener(_onViewModelUpdate);
     widget.viewModel.changeAvatar.removeListener(_onViewModelUpdate);
     widget.viewModel.signOut.removeListener(_onViewModelUpdate);
-    // If the ViewModel was created by this screen (not typical with Provider/DI),
-    // you might call widget.viewModel.dispose(); here.
-    // But typically, ViewModel lifecycle is managed by DI.
     super.dispose();
   }
 
   void _onViewModelUpdate() {
-    // When a command notifies, trigger a rebuild of the screen
     if (mounted) {
       setState(() {});
     }
   }
 
   Future<void> _showImageSourceActionSheet(BuildContext context) async {
-    // Access viewModel via widget.viewModel
     showModalBottomSheet(
       context: context,
       builder: (BuildContext bc) {
@@ -75,186 +70,331 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = widget.viewModel; // For convenience
-
-    // Handle initial loading state
-    if (viewModel.loadUser.running && viewModel.user == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (widget.viewModel.loadUser.running) {
+      return Scaffold(body: const Center(child: CircularProgressIndicator()));
     }
 
-    // Handle error state for initial profile load
-    if (viewModel.loadUser.error && viewModel.user == null) {
+    if (widget.viewModel.user == null) {
       return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Error loading profile: ${(viewModel.loadUser.result as R.Error).error.toString()}',
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  viewModel.clearError(); // This will trigger a notify via commands if state changes
-                  viewModel.loadUser.execute();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        body: const Center(child: Text('Error loading profile.')),
       );
     }
 
-    // If user is still null after load attempt (and not error reported above)
-    if (viewModel.user == null) {
-      // This could also happen if signOut was successful
-      return const Scaffold(
-        body: Center(child: Text("No profile data available or user signed out.")),
-      );
-    }
+    return Scaffold(body: _buildProfileView(context, widget.viewModel.user!));
+  }
 
-    // If we have user data, display it
-    final User user = viewModel.user!;
+  Widget _buildProfileView(BuildContext context, User user) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        SliverPersistentHeader(
+          delegate: ProfileHeaderDelegate(
+            user: user,
+            showImageSourceActionSheet:
+                () => _showImageSourceActionSheet(context),
+            isPickingImage: widget.viewModel.changeAvatar.running,
+          ),
+          pinned: true,
+        ),
+        SliverToBoxAdapter(child: BodyWidget(user: user)),
+      ],
+    );
+  }
+}
 
-    return Scaffold(
-      // appBar: AppBar(title: const Text('Profile')), // Assuming shell has Appbar
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () => viewModel.loadUser.execute(),
-          child: ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: <Widget>[
-              Center(
-                child: GestureDetector(
-                  onTap: () => _showImageSourceActionSheet(context),
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage:
-                            user.avatar != null && user.avatar!.isNotEmpty
-                                ? NetworkImage(user.avatar!)
-                                : null,
-                        child:
-                            (user.avatar == null || user.avatar!.isEmpty) &&
-                                    user.initials.isNotEmpty
-                                ? Text(
-                                  user.initials,
-                                  style: const TextStyle(fontSize: 40),
-                                )
-                                : null,
-                      ),
-                      if (viewModel.changeAvatar.running)
-                        const Positioned(
-                          right: 4,
-                          bottom: 4,
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      else
-                        const CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.black54,
-                          child: Icon(Icons.camera_alt, color: Colors.white, size: 18),
-                        ),
-                    ],
+class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final double expandedHeight = 200.0;
+  final double collapsedHeight = kToolbarHeight + 80;
+
+  ProfileHeaderDelegate({
+    required this.user,
+    required this.showImageSourceActionSheet,
+    required this.isPickingImage,
+  });
+
+  final User user;
+  final GestureTapCallback showImageSourceActionSheet;
+  final bool isPickingImage;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final double avatarSize = 120.0;
+    final double top = expandedHeight - shrinkOffset - avatarSize / 1.5;
+    final avatarBytes = convertBase64ToImage(user.avatar);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      fit: StackFit.expand,
+      children: [
+        Container(
+          child:
+              avatarBytes != null
+                  ? Image.memory(
+                    avatarBytes,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      print(
+                        "Error displaying memory image for background: $error",
+                      );
+                      return Container(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5),
+                      );
+                    },
+                  )
+                  : Container(color: Theme.of(context).colorScheme.primary),
+        ),
+
+        Positioned.fill(
+          child: Container(color: Colors.black.withValues(alpha: 0.25)),
+        ),
+
+        Positioned(
+          top: top.clamp(
+            kToolbarHeight - avatarSize / 2,
+            expandedHeight - avatarSize / 3,
+          ),
+          left: MediaQuery.of(context).size.width / 2 - avatarSize / 2,
+          child: GestureDetector(
+            onTap: showImageSourceActionSheet,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                CircleAvatar(
+                  radius: avatarSize / 2,
+                  backgroundImage:
+                      avatarBytes != null ? MemoryImage(avatarBytes) : null,
+                  child:
+                      avatarBytes == null
+                          ? Text(
+                            user.initials,
+                            style: const TextStyle(fontSize: 40),
+                          )
+                          : null,
+                ),
+                if (isPickingImage)
+                  const Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  const CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.black54,
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 12), // Reduced spacing a bit
-              if (viewModel.changeAvatar.error)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0, top: 4.0),
-                  child: Text(
-                    "Failed to update picture: ${(viewModel.changeAvatar.result as R.Error).error.toString()}",
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              const SizedBox(height: 12),
-
-              _buildProfileDetailRow(context, 'First Name:', user.firstName),
-              _buildProfileDetailRow(context, 'Last Name:', user.lastName),
-              _buildProfileDetailRow(context, 'Username:', user.username),
-              _buildProfileDetailRow(context, 'Email:', user.email),
-              _buildProfileDetailRow(context, 'Phone Number:', user.phoneNumber ?? 'Not set'),
-              const SizedBox(height: 16),
-
-              _buildProfileSectionTitle(context, 'Interests:'),
-              user.interests.isNotEmpty
-                  ? Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      children: user.interests.map((interest) => Chip(label: Text(interest.displayName))).toList(),
-                    )
-                  : const Text('No interests set.', style: TextStyle(fontStyle: FontStyle.italic)),
-              const SizedBox(height: 16),
-
-              _buildProfileSectionTitle(context, 'Travel Styles:'),
-              user.travelStyles.isNotEmpty
-                  ? Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      children: user.travelStyles.map((style) => Chip(label: Text(style.displayName))).toList(),
-                    )
-                  : const Text('No travel styles set.', style: TextStyle(fontStyle: FontStyle.italic)),
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  foregroundColor: Theme.of(context).colorScheme.onError,
-                ),
-                onPressed: viewModel.signOut.running ? null : () {
-                  viewModel.signOut.execute();
-                  // Navigation should be handled by go_router based on AuthRepository state change
-                },
-                child: viewModel.signOut.running
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text("Sign Out"),
-              ),
-              if (viewModel.signOut.error)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    "Sign out failed: ${(viewModel.signOut.result as R.Error).error.toString()}",
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildProfileDetailRow(BuildContext context, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  @override
+  double get maxExtent => expandedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) => true;
+}
+
+class BodyWidget extends StatelessWidget {
+  final User user;
+
+  const BodyWidget({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30.0),
+          topRight: Radius.circular(30.0),
+        ),
+      ),
+      padding: const EdgeInsets.only(
+        top: 52.0,
+        left: 20.0,
+        right: 20.0,
+        bottom: 20.0,
+      ), // Increased top padding for avatar overlap
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            user.username,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
-          Expanded(child: Text(value, style: Theme.of(context).textTheme.bodyLarge)),
+          const SizedBox(height: Dimens.paddingVertical),
+          // Google Icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                // TODO: change to Google
+                icon: const FaIcon(FontAwesomeIcons.google),
+                iconSize: 28,
+                onPressed: () {
+                  // TODO: Handle Google profile link
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Google icon tapped!')),
+                  );
+                },
+              ),
+            ],
+          ),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              label: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  "Edit Profile",
+                  style: TextStyle(
+                    fontSize: Theme.of(context).textTheme.labelMedium?.fontSize,
+                    color: Theme.of(context).colorScheme.onInverseSurface,
+                  ),
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.inverseSurface,
+              ),
+              icon: Icon(
+                Icons.edit,
+                color: Theme.of(context).colorScheme.onInverseSurface,
+              ),
+              onPressed: () => {},
+            ),
+          ),
+
+          SizedBox(height: Dimens.paddingVertical),
+
+          Divider(),
+          _buildInfoRow(icon: Icons.email_outlined, text: Text(user.email)),
+          _buildInfoRow(
+            icon: Icons.phone_outlined,
+            text: Text(
+              user.phoneNumber == null || user.phoneNumber!.isEmpty
+                  ? "No phone number"
+                  : user.phoneNumber!,
+              style: TextStyle(
+                fontStyle:
+                    user.phoneNumber != null
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+              ),
+            ),
+          ),
+          SizedBox(height: Dimens.paddingVertical),
+
+          _buildChipSection(
+            context,
+            'Interests',
+            user.interests.map((interest) => interest.displayName).toList(),
+          ),
+
+          SizedBox(height: Dimens.paddingVertical),
+
+          _buildChipSection(
+            context,
+            'Travel Styles',
+            user.travelStyles
+                .map((travelStyle) => travelStyle.displayName)
+                .toList(),
+          ),
+          SizedBox(height: Dimens.paddingVertical * 2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              label: Text(
+                "Sign Out",
+                style: TextStyle(
+                  fontSize: Theme.of(context).textTheme.labelMedium?.fontSize,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              icon: Icon(
+                Icons.exit_to_app,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => {},
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProfileSectionTitle(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+  Widget _buildInfoRow({required IconData icon, required Text text}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+          child: Row(
+            children: [
+              Icon(icon),
+              const SizedBox(width: Dimens.paddingHorizontal / 2),
+              Expanded(child: text),
+            ],
+          ),
+        ),
+        Divider(),
+      ],
+    );
+  }
+
+  Widget _buildChipSection(BuildContext context, title, List<String> items) {
+    if (items.isEmpty) {
+      return Text("No $title", style: TextStyle(fontStyle: FontStyle.italic));
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children:
+                items
+                    .map(
+                      (item) => Chip(
+                        label: Text(item),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    )
+                    .toList(),
+          ),
+        ],
+      ),
     );
   }
 }
