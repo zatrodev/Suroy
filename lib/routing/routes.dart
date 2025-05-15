@@ -4,4 +4,5 @@ abstract final class Routes {
   static const plans = "/plans";
   static const social = "/social";
   static const profile = "/profile";
+  static const travelPlanDetails = "/travel-plan/:id";
 }

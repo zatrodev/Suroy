@@ -7,6 +7,8 @@ import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/view_models/profile_viewmodel.dart';
 import 'package:app/ui/home/profile/widgets/profile_screen.dart';
 import 'package:app/ui/home/social/widgets/social_screen.dart';
+import 'package:app/ui/auth/login/widgets/login_screen.dart';
+import 'package:app/ui/screens/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
