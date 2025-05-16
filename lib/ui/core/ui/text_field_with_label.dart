@@ -48,7 +48,7 @@ class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
 
   @override
   Widget build(BuildContext context) {
-    Widget? effectiveSuffixIcon = widget.suffixIcon; // Prioritize custom suffix
+    Widget? effectiveSuffixIcon = widget.suffixIcon;
     if (effectiveSuffixIcon == null && widget.isPasswordType) {
       effectiveSuffixIcon = IconButton(
         icon: Icon(
@@ -75,7 +75,9 @@ class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
               color: Theme.of(context).colorScheme.outline,
             ),
             hintText: widget.textFieldLabel,
-            border: const OutlineInputBorder(),
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+            ),
             suffixIcon: effectiveSuffixIcon,
           ),
           keyboardType: widget.keyboardType,
