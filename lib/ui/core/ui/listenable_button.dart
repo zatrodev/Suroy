@@ -5,11 +5,13 @@ class ListenableButton extends StatelessWidget {
   const ListenableButton({
     super.key,
     required this.label,
+    this.icon,
     required this.command,
     required this.onPressed,
   });
 
   final String label;
+  final IconData? icon;
   final Command command;
   final VoidCallback? onPressed;
 
@@ -30,7 +32,7 @@ class ListenableButton extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2.0),
                     ),
                   )
-                  : const Icon(Icons.check_circle_outline),
+                  : Icon(icon),
           label: Padding(padding: EdgeInsets.all(8.0), child: Text(label)),
           onPressed: isLoading ? null : onPressed,
         );
