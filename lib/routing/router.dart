@@ -106,7 +106,7 @@ GoRouter router(AuthRepository authRepository) {
                         ),
                       ),
                     ),
-                routes: [
+                routes: <RouteBase>[
                   GoRoute(
                     path: Routes.editProfileRelative,
                     pageBuilder: (context, state) {

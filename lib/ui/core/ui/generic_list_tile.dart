@@ -48,7 +48,9 @@ class GenericChipTile<T> extends StatelessWidget {
     final effectiveLabelColor =
         isSelected ? selectedColor : Theme.of(context).colorScheme.onSurface;
     final effectiveBackgroundColor =
-        isSelected ? selectedColor.withValues(alpha: .25) : Colors.transparent;
+        isSelected
+            ? selectedColor.withValues(alpha: 0.25)
+            : Theme.of(context).colorScheme.surfaceContainerLow;
 
     return InkWell(
       customBorder: RoundedRectangleBorder(
