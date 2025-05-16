@@ -27,5 +27,5 @@ final class Error<T> extends Result<T> {
   final Exception error;
 
   @override
-  String toString() => 'Result<$T>.error($error)';
+  String toString() => error.toString().replaceAll("Exception:", "").trim();
 }

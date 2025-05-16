@@ -128,13 +128,7 @@ class UserRepository extends FirestoreService {
         return Result.error(Exception("User with ID $userId not found."));
       }
     } on FirebaseException catch (e) {
-      return Result.error(
-        FirebaseException(
-          plugin: e.plugin,
-          code: e.code,
-          message: 'Firebase error: ${e.message}',
-        ),
-      );
+      return Result.error(Exception(e.message));
     } on Exception catch (e) {
       return Result.error(e);
     }
@@ -180,6 +174,7 @@ class UserRepository extends FirestoreService {
         lastName: userToUpdate.lastName,
         username: userToUpdate.username,
         phoneNumber: userToUpdate.phoneNumber,
+        isDiscoverable: userToUpdate.isDiscoverable,
         interests: userToUpdate.interests,
         travelStyles: userToUpdate.travelStyles,
         updatedAt: DateTime.now(),

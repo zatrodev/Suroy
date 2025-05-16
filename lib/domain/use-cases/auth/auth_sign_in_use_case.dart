@@ -1,6 +1,7 @@
 import 'package:app/data/repositories/auth/auth_repository.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
 import 'package:app/utils/result.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthSignInUseCase {
   AuthSignInUseCase({
@@ -22,7 +23,7 @@ class AuthSignInUseCase {
           email: identifier,
           password: password,
         );
-      } on Exception catch (error) {
+      } on FirebaseAuthException catch (error) {
         return Result.error(error);
       }
     } else {

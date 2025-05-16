@@ -7,7 +7,6 @@ class AuthRepository extends ChangeNotifier {
 
   User? get currentUser => _firebaseAuth.currentUser;
   bool get isAuthenticated => currentUser != null;
-  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   Future<Result<UserCredential>> signInWithEmailAndPassword({
     required String email,
@@ -19,8 +18,8 @@ class AuthRepository extends ChangeNotifier {
 
       print("User signed in: ${userCredential.user?.uid}");
       return Result.ok(userCredential);
-    } on Exception catch (error) {
-      return Result.error(error);
+    } on FirebaseAuthException catch (error) {
+      return Result.error(Exception(error.message));
     }
   }
 
