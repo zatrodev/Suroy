@@ -27,6 +27,7 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentIndex = navigationShell.currentIndex;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       //appBar: AppBar(
@@ -76,31 +77,29 @@ class Home extends StatelessWidget {
       //),
       // drawer: YourAppDrawer(), // If you have a drawer
       body: navigationShell, // This widget displays the current tab's page
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: _onTabTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star_border_outlined), // Figma has star for Plans
-            activeIcon: Icon(Icons.star), // Filled star for active
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentIndex,
+        onDestinationSelected: _onTabTapped,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        backgroundColor: colorScheme.surface,
+        indicatorColor: colorScheme.secondaryContainer,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
             label: 'Plans',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_outlined), // Using a 'social' icon
-            activeIcon: Icon(Icons.group),
+          NavigationDestination(
+            icon: Icon(Icons.group_outlined),
+            selectedIcon: Icon(Icons.group),
             label: 'Social',
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.primary,
-        showUnselectedLabels: true, // Recommended for clarity
-        type:
-            BottomNavigationBarType.fixed, // Ensures labels are always visible
       ),
     );
   }

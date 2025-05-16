@@ -46,7 +46,7 @@ class GenericChipTile<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveLabelColor =
-        isSelected ? selectedColor : Theme.of(context).colorScheme.outline;
+        isSelected ? selectedColor : Theme.of(context).colorScheme.onSurface;
     final effectiveBackgroundColor =
         isSelected ? selectedColor.withValues(alpha: .25) : Colors.transparent;
 
@@ -70,7 +70,11 @@ class GenericChipTile<T> extends StatelessWidget {
               style: TextStyle(
                 color: effectiveLabelColor,
                 fontWeight: FontWeight.bold,
-                fontSize: 16, // You might want to make this configurable too
+                fontSize:
+                    Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .fontSize, // You might want to make this configurable too
               ),
             ),
             const SizedBox(width: 8), // Spacing between label and title
@@ -79,8 +83,11 @@ class GenericChipTile<T> extends StatelessWidget {
                   nameGetter(value), // Use the getter for the name/title
                   style: TextStyle(
                     color: effectiveLabelColor,
-                    fontSize: 16,
-
+                    fontSize:
+                        Theme.of(context)
+                            .textTheme
+                            .bodyMedium!
+                            .fontSize, // You might want to make this configurable too
                     // Consider if title should also be bold or have different styling
                   ),
                 ),

@@ -9,6 +9,7 @@ import 'package:app/ui/auth/login/widgets/carousel_image_item.dart';
 import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/generic_list_tile.dart';
+import 'package:app/ui/core/ui/listenable_button.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
 import 'package:app/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -329,6 +330,19 @@ class _SignInScreenState extends State<SignInScreen> {
           },
         ),
         SizedBox(height: Dimens.paddingVertical),
+
+        ListenableButton(
+          label: "Sign In",
+          command: widget.viewModel.signIn,
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              widget.viewModel.signIn.execute((
+                _signInIdentifierController.value.text,
+                _signInPasswordController.value.text,
+              ));
+            }
+          },
+        ),
         ListenableBuilder(
           listenable: widget.viewModel.signIn,
           builder: (context, _) {
@@ -355,17 +369,14 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                             )
                             : null,
-                    onPressed:
-                        isLoading
-                            ? null
-                            : () {
-                              if (_formKey.currentState!.validate()) {
-                                widget.viewModel.signIn.execute((
-                                  _signInIdentifierController.value.text,
-                                  _signInPasswordController.value.text,
-                                ));
-                              }
-                            },
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        widget.viewModel.signIn.execute((
+                          _signInIdentifierController.value.text,
+                          _signInPasswordController.value.text,
+                        ));
+                      }
+                    },
                   ),
                 ),
               ],
@@ -640,45 +651,20 @@ class _SignInScreenState extends State<SignInScreen> {
               ),
             ),
             Spacer(),
-            ListenableBuilder(
-              listenable: widget.viewModel.signUp,
-              builder: (context, _) {
-                final bool isLoading = widget.viewModel.signUp.running;
-                return FilledButton.icon(
-                  icon:
-                      isLoading
-                          ? const Padding(
-                            padding: EdgeInsets.only(right: 4.0),
-                            child: SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.0,
-                              ),
-                            ),
-                          )
-                          : const Icon(Icons.check_circle_outline),
-                  label: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Text("Finish Sign Up"),
+            ListenableButton(
+              label: "Finish Sign Up",
+              command: widget.viewModel.signUp,
+              onPressed: () {
+                widget.viewModel.signUp.execute(
+                  User(
+                    firstName: _signUpFirstNameController.text.trim(),
+                    lastName: _signUpLastNameController.text.trim(),
+                    username: _signUpUsernameController.text.trim(),
+                    email: _signUpEmailController.text.trim(),
+                    password: _signUpPasswordController.text,
+                    interests: _signUpInterests,
+                    travelStyles: _signUpTravelStyles,
                   ),
-                  onPressed:
-                      isLoading
-                          ? null
-                          : () {
-                            widget.viewModel.signUp.execute(
-                              User(
-                                firstName:
-                                    _signUpFirstNameController.text.trim(),
-                                lastName: _signUpLastNameController.text.trim(),
-                                username: _signUpUsernameController.text.trim(),
-                                email: _signUpEmailController.text.trim(),
-                                password: _signUpPasswordController.text,
-                                interests: _signUpInterests,
-                                travelStyles: _signUpTravelStyles,
-                              ),
-                            );
-                          },
                 );
               },
             ),

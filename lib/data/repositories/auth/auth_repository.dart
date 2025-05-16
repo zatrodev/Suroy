@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 class AuthRepository extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // NOTE: maybe currentUser will not get automatically updated by Firebase so direct assignment is needed
   User? get currentUser => _firebaseAuth.currentUser;
   bool get isAuthenticated => currentUser != null;
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();

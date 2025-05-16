@@ -4,10 +4,11 @@ import 'package:app/domain/models/user.dart';
 import 'package:app/domain/use-cases/user/update_avatar_use_case.dart';
 import 'package:app/utils/command.dart';
 import 'package:app/utils/result.dart';
+import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logging/logging.dart';
 
-class ProfileViewModel {
+class ProfileViewModel extends ChangeNotifier {
   ProfileViewModel({
     required UpdateAvatarUseCase updateAvatarUseCase,
     required AuthRepository authRepository,
@@ -15,7 +16,7 @@ class ProfileViewModel {
   }) : _authRepository = authRepository,
        _userRepository = userRepository,
        _updateAvatarUseCase = updateAvatarUseCase {
-    loadUser = Command0<User>(_fetchUser);
+    loadUser = Command0<User>(_loadUser);
     changeAvatar = Command1<String, ImageSource>(_changeAvatar);
     signOut = Command0<void>(_signOut);
 
@@ -40,7 +41,7 @@ class ProfileViewModel {
           ? (changeAvatar.result as Error).error.toString()
           : null);
 
-  Future<Result<User>> _fetchUser() async {
+  Future<Result<User>> _loadUser() async {
     final currentUser = _authRepository.currentUser;
     if (currentUser == null) {
       _log.warning("User not logged in, cannot fetch profile.");
@@ -55,7 +56,6 @@ class ProfileViewModel {
     switch (result) {
       case Ok<User>():
         _user = result.value;
-        print("FETCHED USER: ${_user?.avatar}");
         break;
       case Error<User>():
         _log.severe("Failed to load profile: ${result.error}");
