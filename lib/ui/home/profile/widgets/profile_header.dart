@@ -113,7 +113,9 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         Icons.exit_to_app,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                      onPressed: () => {},
+                      onPressed: () async {
+                        await signOut();
+                      },
                     ),
                   ),
                 ],
@@ -136,13 +138,20 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       // 1. Border Layer (Outer Hexagon)
                       ClipPath(
                         clipper: HexagonClipper(),
-                        child: Container(
-                          width: avatarSize, // Full size for the border
-                          height: avatarSize,
-                          color: Theme.of(context).colorScheme.surface,
+                        child: Badge(
+                          alignment: Alignment(1, -0.75),
+                          smallSize: 64,
+                          backgroundColor:
+                              user.isDiscoverable
+                                  ? Colors.greenAccent
+                                  : Colors.grey.withValues(alpha: 0.5),
+                          child: Container(
+                            width: avatarSize,
+                            height: avatarSize,
+                            color: Theme.of(context).colorScheme.surface,
+                          ),
                         ),
                       ),
-                      // 2. Content Layer (Inner Hexagon, smaller due to padding)
                       Padding(
                         padding: EdgeInsets.all(4.0),
                         child: ClipPath(
@@ -185,10 +194,6 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                     ],
                   ),
                 ),
-                // --- End Bordered Hexagonal Avatar ---
-
-                // Icons (Progress Indicator or Camera Icon)
-                // Positioned relative to the `avatarSize` area.
                 if (isPickingImage)
                   const Positioned(
                     // Adjust if needed for aesthetics with border

@@ -6,6 +6,7 @@ class User extends Equatable {
   final String lastName;
   final String username;
   final String email;
+  final bool isDiscoverable;
   final String? password;
   final String? phoneNumber;
   final String? avatar;
@@ -20,6 +21,7 @@ class User extends Equatable {
     this.password,
     this.phoneNumber,
     this.avatar,
+    this.isDiscoverable = false,
     this.interests = const [],
     this.travelStyles = const [],
   });
@@ -40,6 +42,7 @@ class User extends Equatable {
       'lastName': lastName,
       'username': username,
       'email': email,
+      'isDiscoverable': isDiscoverable,
       'password': password,
       'interests': interests.map((interest) => interest.name).toList(),
       'travelStyles': travelStyles.map((style) => style.name).toList(),
@@ -53,6 +56,7 @@ class User extends Equatable {
     String? email,
     String? phoneNumber,
     String? avatar,
+    bool? isDiscoverable,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
   }) {
@@ -63,6 +67,7 @@ class User extends Equatable {
       email: email ?? this.email,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatar: avatar ?? this.avatar,
+      isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       interests: interests ?? List<Interest>.from(this.interests),
       travelStyles: travelStyles ?? List<TravelStyle>.from(this.travelStyles),
     );
@@ -70,7 +75,7 @@ class User extends Equatable {
 
   @override
   String toString() {
-    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, phoneNumber: $phoneNumber, interests: $interests, travelStyles: $travelStyles)';
+    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, phoneNumber: $phoneNumber, interests: $interests, travelStyles: $travelStyles, isDiscoverable: $isDiscoverable)';
   }
 
   @override
@@ -80,6 +85,7 @@ class User extends Equatable {
     username,
     email,
     phoneNumber,
+    isDiscoverable,
     avatar,
     interests,
     travelStyles,

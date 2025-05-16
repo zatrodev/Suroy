@@ -343,46 +343,6 @@ class _SignInScreenState extends State<SignInScreen> {
             }
           },
         ),
-        ListenableBuilder(
-          listenable: widget.viewModel.signIn,
-          builder: (context, _) {
-            final bool isLoading = widget.viewModel.signIn.running;
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    label: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text("Sign In"),
-                    ),
-                    icon:
-                        isLoading
-                            ? const Padding(
-                              padding: EdgeInsets.only(right: 4.0),
-                              child: SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.0,
-                                ),
-                              ),
-                            )
-                            : null,
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        widget.viewModel.signIn.execute((
-                          _signInIdentifierController.value.text,
-                          _signInPasswordController.value.text,
-                        ));
-                      }
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
         SizedBox(height: Dimens.paddingVertical / 2),
         TextButton(
           onPressed: _toggleForm,
@@ -653,6 +613,7 @@ class _SignInScreenState extends State<SignInScreen> {
             Spacer(),
             ListenableButton(
               label: "Finish Sign Up",
+              icon: Icons.check_circle_outlined,
               command: widget.viewModel.signUp,
               onPressed: () {
                 widget.viewModel.signUp.execute(
@@ -683,12 +644,11 @@ class _SignInScreenState extends State<SignInScreen> {
         context.go(Routes.home);
       }
     } else if (loginState.error) {
-      loginState.clearResult();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           AppSnackBar.show(
             context: context,
-            content: const Text("Error while trying to login"),
+            content: Text((loginState.result as Error).toString()),
             actionLabel: "Try again",
             type: "error",
             onPressed: () {

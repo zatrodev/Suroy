@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:app/data/repositories/user/user_model.dart';
+import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/generic_list_tile.dart';
 import 'package:app/ui/core/ui/listenable_button.dart';
@@ -25,6 +26,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
+  bool _isDiscoverable = false;
   List<Interest> _interests = [];
   List<TravelStyle> _travelStyles = [];
 
@@ -42,6 +44,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         widget.viewModel.editableUser.phoneNumber ?? '';
     _interests = widget.viewModel.editableUser.interests;
     _travelStyles = widget.viewModel.editableUser.travelStyles;
+    _isDiscoverable = widget.viewModel.editableUser.isDiscoverable;
 
     widget.viewModel.saveChanges.addListener(_onSaveChangesResult);
     widget.viewModel.isUsernameUnique.addListener(
@@ -235,7 +238,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
                 keyboardType: TextInputType.phone,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Dimens.paddingVertical * 1.5),
               Text("Interests", style: Theme.of(context).textTheme.labelSmall),
               const SizedBox(height: 8),
               Wrap(
@@ -264,7 +267,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }).toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: Dimens.paddingVertical * 1.5),
               Text(
                 "Travel Styles",
                 style: Theme.of(context).textTheme.labelSmall,
@@ -297,7 +300,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }).toList(),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: Dimens.paddingVertical * 1.5),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: CheckboxListTile(
+                    value: _isDiscoverable,
+                    title: Text(
+                      "Let other people view your profile and travel plans.",
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                    secondary: Icon(Icons.public),
+                    onChanged: (isDiscoverable) {
+                      setState(() {
+                        _isDiscoverable = isDiscoverable!;
+                      });
+                      widget.viewModel.updateIsDiscoverable(isDiscoverable!);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: Dimens.paddingVertical * 2),
               ListenableBuilder(
                 listenable: widget.viewModel,
                 builder: (context, _) {
@@ -306,6 +333,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       ListenableButton(
                         label: "Save Changes",
+                        icon: Icons.check_circle_outlined,
                         command: widget.viewModel.saveChanges,
                         onPressed:
                             widget.viewModel.hasUnsavedChanges
@@ -334,9 +362,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 _usernameErrorText = null;
                               });
                             },
-                            child: const Text(
+                            child: Text(
                               'Discard Changes',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                         ),

@@ -4,11 +4,10 @@ import 'package:app/domain/models/user.dart';
 import 'package:app/domain/use-cases/user/update_avatar_use_case.dart';
 import 'package:app/utils/command.dart';
 import 'package:app/utils/result.dart';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logging/logging.dart';
 
-class ProfileViewModel extends ChangeNotifier {
+class ProfileViewModel {
   ProfileViewModel({
     required UpdateAvatarUseCase updateAvatarUseCase,
     required AuthRepository authRepository,
@@ -36,10 +35,8 @@ class ProfileViewModel extends ChangeNotifier {
   User? get user => _user;
 
   String? get errorMessage =>
-      (loadUser.error ? (loadUser.result as Error).error.toString() : null) ??
-      (changeAvatar.error
-          ? (changeAvatar.result as Error).error.toString()
-          : null);
+      (loadUser.error ? (loadUser.result as Error).toString() : null) ??
+      (changeAvatar.error ? (changeAvatar.result as Error).toString() : null);
 
   Future<Result<User>> _loadUser() async {
     final currentUser = _authRepository.currentUser;

@@ -62,6 +62,11 @@ class EditProfileViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateIsDiscoverable(bool isDiscoverable) {
+    _editableUser = _editableUser.copyWith(isDiscoverable: isDiscoverable);
+    notifyListeners();
+  }
+
   Future<Result<void>> _saveChanges() async {
     _errorMessage = null;
     notifyListeners();

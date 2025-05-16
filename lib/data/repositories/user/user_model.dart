@@ -109,16 +109,17 @@ enum TravelStyle {
 
 class UserFirebaseModel {
   final String id;
-  String firstName;
-  String lastName;
-  String username;
-  String email;
-  List<Interest> interests;
-  List<TravelStyle> travelStyles;
-  DateTime createdAt;
-  DateTime updatedAt;
-  String? phoneNumber;
-  String? avatar;
+  final String firstName;
+  final String lastName;
+  final String username;
+  final String email;
+  final List<Interest> interests;
+  final List<TravelStyle> travelStyles;
+  final bool isDiscoverable;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String? phoneNumber;
+  final String? avatar;
 
   UserFirebaseModel({
     required this.id,
@@ -130,6 +131,7 @@ class UserFirebaseModel {
     this.interests = const [],
     this.travelStyles = const [],
     this.avatar,
+    this.isDiscoverable = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -146,6 +148,7 @@ class UserFirebaseModel {
       'interests': interests.map((interest) => interest.name).toList(),
       'travelStyles': travelStyles.map((style) => style.name).toList(),
       'avatar': avatar,
+      'isDiscoverable': isDiscoverable,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -185,6 +188,7 @@ class UserFirebaseModel {
       phoneNumber: data['phoneNumber'] ?? '',
       email: data['email'] ?? '',
       avatar: data['avatar'],
+      isDiscoverable: data['isDiscoverable'],
       interests: interestsList,
       travelStyles: travelStyleList,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -200,6 +204,7 @@ class UserFirebaseModel {
     String? phoneNumber,
     String? avatar,
     String? email,
+    bool? isDiscoverable,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
     DateTime? createdAt,
@@ -213,6 +218,7 @@ class UserFirebaseModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatar: avatar ?? this.avatar,
       email: email ?? this.email,
+      isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       interests: interests ?? this.interests,
       travelStyles: travelStyles ?? this.travelStyles,
       createdAt: createdAt ?? this.createdAt,
@@ -226,6 +232,7 @@ class UserFirebaseModel {
       lastName: lastName,
       username: username,
       email: email,
+      isDiscoverable: isDiscoverable,
       phoneNumber: phoneNumber,
       avatar: avatar,
       interests: interests,
