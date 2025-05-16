@@ -41,7 +41,6 @@ class AuthSignUpUseCase {
 
             return Result.ok(await _userRepository.createUser(newUser));
           } else {
-            print("Sign up error: User object was null after creation.");
             return Result.error(
               Exception("User object was null after successful creation"),
             );
@@ -50,7 +49,6 @@ class AuthSignUpUseCase {
           return Result.error(signUpResult.error);
       }
     } on Exception catch (error) {
-      print("General sign up error: $error");
       return Result.error(error);
     }
   }

@@ -184,6 +184,7 @@ class UserFirebaseModel {
       username: data['username'] ?? '',
       phoneNumber: data['phoneNumber'] ?? '',
       email: data['email'] ?? '',
+      avatar: data['avatar'],
       interests: interestsList,
       travelStyles: travelStyleList,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),

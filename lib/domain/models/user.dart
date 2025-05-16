@@ -1,6 +1,7 @@
 import 'package:app/data/repositories/user/user_model.dart';
+import 'package:equatable/equatable.dart';
 
-class User {
+class User extends Equatable {
   final String firstName;
   final String lastName;
   final String username;
@@ -11,7 +12,7 @@ class User {
   final List<Interest> interests;
   final List<TravelStyle> travelStyles;
 
-  User({
+  const User({
     required this.firstName,
     required this.lastName,
     required this.username,
@@ -50,7 +51,6 @@ class User {
     String? lastName,
     String? username,
     String? email,
-    String? password,
     String? phoneNumber,
     String? avatar,
     List<Interest>? interests,
@@ -61,16 +61,27 @@ class User {
       lastName: lastName ?? this.lastName,
       username: username ?? this.username,
       email: email ?? this.email,
-      password: password ?? this.password,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatar: avatar ?? this.avatar,
-      interests: interests ?? this.interests,
-      travelStyles: travelStyles ?? this.travelStyles,
+      interests: interests ?? List<Interest>.from(this.interests),
+      travelStyles: travelStyles ?? List<TravelStyle>.from(this.travelStyles),
     );
   }
 
   @override
   String toString() {
-    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, interests: $interests, travelStyles: $travelStyles)';
+    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, phoneNumber: $phoneNumber, interests: $interests, travelStyles: $travelStyles)';
   }
+
+  @override
+  List<Object?> get props => [
+    firstName,
+    lastName,
+    username,
+    email,
+    phoneNumber,
+    avatar,
+    interests,
+    travelStyles,
+  ];
 }

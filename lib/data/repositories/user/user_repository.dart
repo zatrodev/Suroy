@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/services/firebase/firestore_service.dart';
 import 'package:app/domain/models/user.dart';
@@ -9,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserRepository extends FirestoreService {
   UserRepository({required super.firestoreInstance})
     : super(collectionName: 'users');
+
+  UserFirebaseModel? _cachedUser;
 
   Future<Result<void>> createUser(UserFirebaseModel user) async {
     try {
@@ -72,6 +72,10 @@ class UserRepository extends FirestoreService {
     String? excludeUid,
   }) async {
     try {
+      if (_cachedUser?.username == username) {
+        return Result.ok(true);
+      }
+
       Query query = collectionReference.where('username', isEqualTo: username);
       final snapshot = await query.get();
 
@@ -92,72 +96,118 @@ class UserRepository extends FirestoreService {
     }
   }
 
-  /// Fetches a user by their unique ID.
-  ///
-  /// Returns a [Result.ok] with the [UserFirebaseModel] if found.
-  /// Returns a [Result.error] if the user is not found or if any other error occurs.
-  Future<Result<User>> getUserById(String userId) async {
+  Future<Result<User>> getUserById(
+    String userId, {
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh && _cachedUser != null && _cachedUser?.id == userId) {
+      print('Serving user $userId from cache.');
+      return Result.ok(_cachedUser!.toUser());
+    }
+
+    print(
+      'Fetching user $userId from Firestore (forceRefresh: $forceRefresh).',
+    );
     try {
       final DocumentSnapshot<Map<String, dynamic>> docSnapshot =
           await collectionReference.doc(userId).get();
 
       if (docSnapshot.exists) {
         final userFirebase = UserFirebaseModel.fromFirestore(docSnapshot);
-        print('User fetched successfully for ID: $userId');
-        return Result.ok(userFirebase.toUser());
+        // Update cache
+        _cachedUser = userFirebase;
+        print('User $userId fetched and cached successfully.');
+        return Result.ok(_cachedUser!.toUser());
       } else {
         print('User not found for ID: $userId');
+
+        if (_cachedUser!.id == userId) {
+          _cachedUser = null;
+        }
+
         return Result.error(Exception("User with ID $userId not found."));
       }
     } on FirebaseException catch (e) {
-      print(
-        'Firebase error fetching user by ID $userId: ${e.message} (Code: ${e.code})',
-      );
       return Result.error(
         FirebaseException(
           plugin: e.plugin,
-          message: 'Firebase error: ${e.message} (Code: ${e.code})',
+          code: e.code,
+          message: 'Firebase error: ${e.message}',
         ),
       );
     } on Exception catch (e) {
-      // This could catch errors from UserFirebaseModel.fromFirestore if it throws
-      print('Generic error fetching user by ID $userId: $e');
       return Result.error(e);
     }
   }
 
-  /// Updates the user's avatar in Firestore with a Base64 encoded image.
-  ///
-  /// Takes the [userId] and the [imageFile] as input.
-  /// Returns a [Result.ok] with the Base64 data URL string on success.
-  /// Returns a [Result.error] if any error occurs.
   Future<Result<String>> updateAvatar(String userId, String avatar) async {
     try {
-      await collectionReference.doc(userId).update({
-        'profilePictureUrl': avatar,
-      });
+      await collectionReference.doc(userId).update({'avatar': avatar});
+
+      // Cache Invalidation/Update:
+      if (_cachedUser != null && _cachedUser!.id == userId) {
+        _cachedUser = _cachedUser!.copyWith(
+          avatar: avatar,
+        ); // Assuming User has copyWith
+        print('Avatar updated in cache for user ID: $userId');
+      } else {
+        clearCacheForUser(userId);
+      }
 
       print('Avatar updated successfully for user ID: $userId');
       return Result.ok(avatar);
     } on FirebaseException catch (e) {
-      print(
-        'Firebase error updating avatar for user ID $userId: ${e.message} (Code: ${e.code})',
-      );
+      // ... (error handling as before)
       return Result.error(
         Exception(
           'Firebase error updating avatar: ${e.message} (Code: ${e.code})',
         ),
       );
-    } on FileSystemException catch (e) {
-      print(
-        'File system error processing image for avatar update (ID $userId): $e',
-      );
-      return Result.error(
-        FileSystemException('File system error processing image: ${e.message}'),
-      );
     } on Exception catch (e) {
-      print('Generic error updating avatar for user ID $userId: $e');
+      // ... (error handling as before)
       return Result.error(Exception('Generic error updating avatar: $e'));
     }
+  }
+
+  Future<Result<void>> updateUserProfile(User userToUpdate) async {
+    try {
+      if (_cachedUser == null) {
+        return Result.error(Exception('No user loaded.'));
+      }
+
+      _cachedUser = _cachedUser!.copyWith(
+        firstName: userToUpdate.firstName,
+        lastName: userToUpdate.lastName,
+        username: userToUpdate.username,
+        phoneNumber: userToUpdate.phoneNumber,
+        interests: userToUpdate.interests,
+        travelStyles: userToUpdate.travelStyles,
+        updatedAt: DateTime.now(),
+      );
+      final userDataMap = _cachedUser!.toJson();
+      await collectionReference.doc(_cachedUser!.id).update(userDataMap);
+
+      print('User profile updated successfully for: ${userToUpdate.username}');
+      return const Result.ok(null);
+    } on FirebaseException catch (e) {
+      return Result.error(
+        Exception('Firebase error: ${e.message} (Code: ${e.code})'),
+      );
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
+
+  void clearCacheForUser(String? userIdToDelete) {
+    if (userIdToDelete == null || _cachedUser!.id == userIdToDelete) {
+      print(
+        'Clearing cache for user: ${userIdToDelete ?? "all (single cache)"}',
+      );
+      _cachedUser = null;
+    }
+  }
+
+  void clearAllCache() {
+    clearCacheForUser(null);
   }
 }
