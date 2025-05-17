@@ -5,6 +5,7 @@ import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/routing/transitions/slide_transition_page.dart';
 import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/ui/home/home.dart';
+import 'package:app/ui/home/home_viewmodel.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/edit/view_models/edit_profile_viewmodel.dart';
 import 'package:app/ui/home/profile/edit/widgets/edit_profile_screen.dart';
@@ -49,8 +50,11 @@ GoRouter router(AuthRepository authRepository) {
           StatefulNavigationShell navigationShell,
         ) {
           return Home(
-            navigationShell:
-                navigationShell /*, viewModel: context.read<HomeViewModel>() */,
+            navigationShell: navigationShell,
+            viewModel: HomeViewModel(
+              authRepository: context.read(),
+              userRepository: context.read(),
+            ),
           );
         },
         branches: <StatefulShellBranch>[

@@ -22,14 +22,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    widget.viewModel.loadUser.addListener(_onViewModelUpdate);
+    //widget.viewModel.loadUser.addListener(_onViewModelUpdate);
     widget.viewModel.changeAvatar.addListener(_onViewModelUpdate);
     widget.viewModel.signOut.addListener(_onViewModelUpdate);
   }
 
   @override
   void dispose() {
-    widget.viewModel.loadUser.removeListener(_onViewModelUpdate);
+    //widget.viewModel.loadUser.removeListener(_onViewModelUpdate);
     widget.viewModel.changeAvatar.removeListener(_onViewModelUpdate);
     widget.viewModel.signOut.removeListener(_onViewModelUpdate);
     super.dispose();
@@ -114,12 +114,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: widget.viewModel.loadUser,
+  Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, child) {
-      if (widget.viewModel.loadUser.running) {
-        return Scaffold(body: const Center(child: CircularProgressIndicator()));
-      }
+      //if (widget.viewModel.loadUser.running) {
+      //  return Scaffold(body: const Center(child: CircularProgressIndicator()));
+      //}
 
       if (widget.viewModel.user == null) {
         return Scaffold(

@@ -15,7 +15,7 @@ class AuthSignUpUseCase {
   final AuthRepository _authRepository;
   final UserRepository _userRepository;
 
-  Future<Result<void>> signUp(local.User user) async {
+  Future<Result<String>> signUp(local.User user) async {
     try {
       final signUpResult = await _authRepository.signUpWithEmailAndPassword(
         email: user.email,
@@ -39,7 +39,14 @@ class AuthSignUpUseCase {
               updatedAt: DateTime.now(),
             );
 
-            return Result.ok(await _userRepository.createUser(newUser));
+            final createResult = await _userRepository.createUser(newUser);
+
+            switch (createResult) {
+              case Ok():
+                return Result.ok(userFromFirebase.uid);
+              case Error<void>():
+                return Result.error(createResult.error);
+            }
           } else {
             return Result.error(
               Exception("User object was null after successful creation"),

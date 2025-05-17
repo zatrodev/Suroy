@@ -102,7 +102,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void initState() {
     super.initState();
-    widget.viewModel.signIn.addListener(_onLoginResult);
+    widget.viewModel.signIn.addListener(_onSignInResult);
     widget.viewModel.signUp.addListener(_onSignUpResult);
     widget.viewModel.isUsernameUnique.addListener(
       _onCheckUsernameUniquenessResult,
@@ -113,12 +113,12 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void didUpdateWidget(covariant SignInScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    oldWidget.viewModel.signIn.removeListener(_onLoginResult);
+    oldWidget.viewModel.signIn.removeListener(_onSignInResult);
     oldWidget.viewModel.signUp.removeListener(_onSignUpResult);
     oldWidget.viewModel.isUsernameUnique.removeListener(
       _onCheckUsernameUniquenessResult,
     );
-    widget.viewModel.signIn.addListener(_onLoginResult);
+    widget.viewModel.signIn.addListener(_onSignInResult);
     widget.viewModel.signUp.addListener(_onSignUpResult);
     widget.viewModel.isUsernameUnique.addListener(
       _onCheckUsernameUniquenessResult,
@@ -128,7 +128,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   void dispose() {
     _debounce?.cancel();
-    widget.viewModel.signIn.removeListener(_onLoginResult);
+    widget.viewModel.signIn.removeListener(_onSignInResult);
     widget.viewModel.signUp.removeListener(_onSignUpResult);
     widget.viewModel.isUsernameUnique.removeListener(
       _onCheckUsernameUniquenessResult,
@@ -635,7 +635,7 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  void _onLoginResult() {
+  void _onSignInResult() {
     if (!mounted) return;
     final loginState = widget.viewModel.signIn;
     if (loginState.completed) {

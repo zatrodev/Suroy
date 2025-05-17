@@ -13,36 +13,52 @@ class AuthSignInUseCase {
   final AuthRepository _authRepository;
   final UserRepository _userRepository;
 
-  Future<Result<void>> signInWithEmailOrUsernameAndPassword({
+  Future<Result<String>> signInWithEmailOrUsernameAndPassword({
     required String identifier,
     required String password,
   }) async {
     if (identifier.contains("@")) {
       try {
-        return _authRepository.signInWithEmailAndPassword(
+        final result = await _authRepository.signInWithEmailAndPassword(
           email: identifier,
           password: password,
         );
+
+        switch (result) {
+          case Ok<UserCredential>():
+            return Result.ok(result.value.user!.uid);
+          case Error<UserCredential>():
+            return Result.error(result.error);
+        }
       } on FirebaseAuthException catch (error) {
         return Result.error(error);
       }
     } else {
       try {
-        final result = await _userRepository.getEmailByUsername(identifier);
+        final getEmailResult = await _userRepository.getEmailByUsername(
+          identifier,
+        );
 
-        switch (result) {
+        switch (getEmailResult) {
           case Ok<String?>():
-            final email = result.value;
+            final email = getEmailResult.value;
             if (email == null) {
               return Result.error(Exception("Username not found."));
             }
 
-            return _authRepository.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
+            final signInResult = await _authRepository
+                .signInWithEmailAndPassword(email: email, password: password);
+
+            switch (signInResult) {
+              case Ok<UserCredential>():
+                return Result.ok(signInResult.value.user!.uid);
+              case Error<UserCredential>():
+                return Result.error(
+                  Exception("Failed loading user: ${signInResult.error}"),
+                );
+            }
           case Error<String?>():
-            return Result.error(result.error);
+            return Result.error(getEmailResult.error);
         }
       } on Exception catch (error) {
         return Result.error(error);

@@ -1,14 +1,15 @@
+import 'package:app/ui/home/home_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class Home extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-  // final HomeViewModel viewModel; // Example
+  final HomeViewModel viewModel;
 
   const Home({
     super.key,
     required this.navigationShell,
-    // required this.viewModel, // Example
+    required this.viewModel,
   });
 
   void _onTabTapped(int index) {
