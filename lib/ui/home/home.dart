@@ -1,3 +1,4 @@
+import 'package:app/routing/routes.dart';
 import 'package:app/ui/home/home_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -77,7 +78,20 @@ class Home extends StatelessWidget {
       //  // elevation: 1.0, // Or as per Figma design
       //),
       // drawer: YourAppDrawer(), // If you have a drawer
-      body: navigationShell, // This widget displays the current tab's page
+      body: ListenableBuilder(
+        listenable: viewModel.loadUser,
+        builder: (context, child) {
+          if (viewModel.loadUser.running) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (viewModel.loadUser.error) {
+            context.go(Routes.signIn);
+          }
+
+          return navigationShell;
+        },
+      ), // This widget displays the current tab's page
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: _onTabTapped,
