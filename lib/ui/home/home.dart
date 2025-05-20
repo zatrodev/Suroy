@@ -1,17 +1,10 @@
-import 'package:app/routing/routes.dart';
-import 'package:app/ui/home/home_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class Home extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
-  final HomeViewModel viewModel;
 
-  const Home({
-    super.key,
-    required this.navigationShell,
-    required this.viewModel,
-  });
+  const Home({super.key, required this.navigationShell});
 
   void _onTabTapped(int index) {
     // Use the navigationShell to switch tabs.
@@ -78,17 +71,8 @@ class Home extends StatelessWidget {
       //  // elevation: 1.0, // Or as per Figma design
       //),
       // drawer: YourAppDrawer(), // If you have a drawer
-      body: ListenableBuilder(
-        listenable: viewModel.loadUser,
-        builder: (context, child) {
-          if (viewModel.loadUser.running) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (viewModel.loadUser.error) {
-            context.go(Routes.signIn);
-          }
-
+      body: Builder(
+        builder: (context) {
           return navigationShell;
         },
       ), // This widget displays the current tab's page

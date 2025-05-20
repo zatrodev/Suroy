@@ -1,17 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 class User extends Equatable {
   final String firstName;
   final String lastName;
   final String username;
   final String email;
-  final bool isDiscoverable;
   final String? password;
+  final bool isDiscoverable;
   final String? phoneNumber;
   final String? avatar;
+  final Uint8List? avatarBytes;
   final List<Interest> interests;
   final List<TravelStyle> travelStyles;
+  final List<Friend> friends;
+  final ColorScheme? colorScheme;
 
   const User({
     required this.firstName,
@@ -19,11 +25,14 @@ class User extends Equatable {
     required this.username,
     required this.email,
     this.password,
+    this.isDiscoverable = false,
     this.phoneNumber,
     this.avatar,
-    this.isDiscoverable = false,
+    this.avatarBytes,
     this.interests = const [],
     this.travelStyles = const [],
+    this.friends = const [],
+    this.colorScheme,
   });
 
   String get initials {
@@ -43,7 +52,7 @@ class User extends Equatable {
       'username': username,
       'email': email,
       'isDiscoverable': isDiscoverable,
-      'password': password,
+      'friends': friends,
       'interests': interests.map((interest) => interest.name).toList(),
       'travelStyles': travelStyles.map((style) => style.name).toList(),
     };
@@ -54,28 +63,36 @@ class User extends Equatable {
     String? lastName,
     String? username,
     String? email,
+    String? password,
     String? phoneNumber,
     String? avatar,
+    Uint8List? avatarBytes,
     bool? isDiscoverable,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
+    List<Friend>? friends,
+    ColorScheme? colorScheme,
   }) {
     return User(
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       username: username ?? this.username,
       email: email ?? this.email,
+      password: password ?? this.password,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatar: avatar ?? this.avatar,
+      avatarBytes: avatarBytes ?? this.avatarBytes,
       isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       interests: interests ?? List<Interest>.from(this.interests),
       travelStyles: travelStyles ?? List<TravelStyle>.from(this.travelStyles),
+      friends: friends ?? List<Friend>.from(this.friends),
+      colorScheme: colorScheme ?? this.colorScheme,
     );
   }
 
   @override
   String toString() {
-    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, phoneNumber: $phoneNumber, interests: $interests, travelStyles: $travelStyles, isDiscoverable: $isDiscoverable)';
+    return 'User(firstName: $firstName, lastName: $lastName, username: $username, email: $email, phoneNumber: $phoneNumber, interests: $interests, travelStyles: $travelStyles, friends: $friends, isDiscoverable: $isDiscoverable)';
   }
 
   @override
@@ -89,5 +106,6 @@ class User extends Equatable {
     avatar,
     interests,
     travelStyles,
+    friends,
   ];
 }

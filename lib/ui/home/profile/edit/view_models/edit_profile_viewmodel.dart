@@ -9,17 +9,16 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 
 class EditProfileViewModel extends ChangeNotifier {
-  EditProfileViewModel({
-    required UserRepository userRepository,
-    required User userToEdit,
-  }) : _userRepository = userRepository,
-       _initialUser = userToEdit {
-    _editableUser = userToEdit.copyWith();
+  EditProfileViewModel({required UserRepository userRepository})
+    : _userRepository = userRepository {
     saveChanges = Command0(_saveChanges);
     isUsernameUnique = Command1<bool, String>(_checkUsernameUniqueness);
+
+    _initialUser = userRepository.user!;
+    _editableUser = _initialUser.copyWith();
   }
 
-  final User _initialUser;
+  late User _initialUser;
   late User _editableUser;
   final UserRepository _userRepository;
   final _log = Logger('EditProfileViewModel');

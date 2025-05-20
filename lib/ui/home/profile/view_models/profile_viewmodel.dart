@@ -17,7 +17,7 @@ class ProfileViewModel {
     changeAvatar = Command1<String, ImageSource>(_changeAvatar);
     signOut = Command0<void>(_signOut);
 
-    _user = userRepository.user!;
+    _user = userRepository.user;
   }
 
   final AuthRepository _authRepository;
@@ -27,7 +27,7 @@ class ProfileViewModel {
   late Command1<String, ImageSource> changeAvatar;
   late Command0<void> signOut;
 
-  late User _user;
+  late User? _user;
   User? get user => _user;
 
   Future<Result<String>> _changeAvatar(ImageSource imageSource) async {
@@ -44,7 +44,7 @@ class ProfileViewModel {
 
     if (result is Ok<String>) {
       final newImageUrl = result.value;
-      _user = _user.copyWith(avatar: newImageUrl);
+      _user = _user!.copyWith(avatar: newImageUrl);
       _log.info("Profile picture updated successfully.");
     } else if (result is Error<String>) {
       _log.severe("Failed to update profile picture: ${result.error}");

@@ -60,9 +60,6 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                     fit: BoxFit.cover,
                     key: ValueKey(user.avatar),
                     errorBuilder: (context, error, stackTrace) {
-                      print(
-                        "Error displaying memory image for background: $error",
-                      );
                       return Container(
                         color: Theme.of(
                           context,

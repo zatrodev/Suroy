@@ -38,21 +38,8 @@ class SignInViewModel {
 
     switch (signInResult) {
       case Ok<String>():
-        final loadResult = await _loadUser(signInResult.value);
-        switch (loadResult) {
-          case Ok<User>():
-            _log.info(
-              "User ${loadResult..value.username} successfully loaded.",
-            );
-            return Result.ok({});
-          case Error<User>():
-            _log.severe(
-              "Failed to load user with user ID ${signInResult.value}",
-            );
-            return Result.error(loadResult.error);
-        }
+        return Result.ok({});
       case Error<String>():
-        _log.warning('Sign in failed! ${signInResult.error}');
         return Result.error(signInResult.error);
     }
   }
@@ -62,19 +49,8 @@ class SignInViewModel {
 
     switch (signUpResult) {
       case Ok<String>():
-        final loadResult = await _loadUser(signUpResult.value);
-        switch (loadResult) {
-          case Ok<User>():
-            _log.info(
-              "User ${loadResult..value.username} successfully loaded.",
-            );
-            return Result.ok({});
-          case Error<User>():
-            _log.severe(
-              "Failed to load user with user ID ${signUpResult.value}",
-            );
-            return Result.error(loadResult.error);
-        }
+        _log.info('Sign up succesful! ${signUpResult.value}');
+        return Result.ok({});
       case Error<String>():
         _log.warning('Sign up failed! ${signUpResult.error}');
         return Result.error(signUpResult.error);
@@ -95,21 +71,6 @@ class SignInViewModel {
         _log.warning(
           'Username uniqueness check failed from repository: ${result.error}',
         );
-        break;
-    }
-
-    return result;
-  }
-
-  Future<Result<User>> _loadUser(String userId) async {
-    _log.info("Fetching profile for user ID: $userId");
-    final result = await _userRepository.getUserById(userId);
-
-    switch (result) {
-      case Ok<User>():
-        return Result.ok(result.value);
-      case Error<User>():
-        _log.severe("Failed to load profile: ${result.error}");
         break;
     }
 

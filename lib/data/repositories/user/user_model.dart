@@ -1,4 +1,5 @@
 import 'package:app/domain/models/user.dart';
+import 'package:app/utils/convert_to_base64.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum Interest {
@@ -107,6 +108,34 @@ enum TravelStyle {
   }
 }
 
+class Friend {
+  final String username;
+  final bool isAccepted;
+
+  Friend({required this.username, this.isAccepted = false});
+
+  Map<String, dynamic> toJson() {
+    return {"username": username, "isAccepted": isAccepted};
+  }
+
+  factory Friend.fromJson(Map<String, dynamic> json) {
+    if (json['username'] == null) {
+      throw FormatException("Missing 'username' in Friend JSON: $json");
+    }
+    return Friend(
+      username: json['username'] as String,
+      isAccepted: json['isAccepted'] as bool? ?? false,
+    );
+  }
+
+  Friend copyWith({String? username, bool? isAccepted}) {
+    return Friend(
+      username: username ?? this.username,
+      isAccepted: isAccepted ?? this.isAccepted,
+    );
+  }
+}
+
 class UserFirebaseModel {
   final String id;
   final String firstName;
@@ -120,6 +149,7 @@ class UserFirebaseModel {
   final DateTime updatedAt;
   final String? phoneNumber;
   final String? avatar;
+  final List<Friend> friends;
 
   UserFirebaseModel({
     required this.id,
@@ -130,6 +160,7 @@ class UserFirebaseModel {
     this.phoneNumber,
     this.interests = const [],
     this.travelStyles = const [],
+    this.friends = const [],
     this.avatar,
     this.isDiscoverable = false,
     required this.createdAt,
@@ -149,6 +180,12 @@ class UserFirebaseModel {
       'travelStyles': travelStyles.map((style) => style.name).toList(),
       'avatar': avatar,
       'isDiscoverable': isDiscoverable,
+      'friends': friends.map(
+        (friend) => {
+          "username": friend.username,
+          "isAccepted": friend.isAccepted,
+        },
+      ),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -162,6 +199,7 @@ class UserFirebaseModel {
       throw StateError('Missing data for User ID: ${snapshot.id}');
     }
 
+    print("IN FROM FIRESTORE");
     List<Interest> interestsList =
         (data['interests'] as List<dynamic>? ?? [])
             .map(
@@ -171,6 +209,8 @@ class UserFirebaseModel {
             )
             .toList();
 
+    print("AFTER INTEREST");
+
     List<TravelStyle> travelStyleList =
         (data['travelStyles'] as List<dynamic>? ?? [])
             .map(
@@ -178,6 +218,13 @@ class UserFirebaseModel {
                 (elem) => elem.name == travelStyleName,
               ),
             )
+            .toList();
+
+    print("AFTER TRAVEL STYLE");
+
+    List<Friend> friendsList =
+        (data['friends'] as List<dynamic>? ?? [])
+            .map((friend) => Friend.fromJson(friend))
             .toList();
 
     return UserFirebaseModel(
@@ -191,6 +238,7 @@ class UserFirebaseModel {
       isDiscoverable: data['isDiscoverable'],
       interests: interestsList,
       travelStyles: travelStyleList,
+      friends: friendsList,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -207,6 +255,7 @@ class UserFirebaseModel {
     bool? isDiscoverable,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
+    List<Friend>? friends,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -221,6 +270,7 @@ class UserFirebaseModel {
       isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       interests: interests ?? this.interests,
       travelStyles: travelStyles ?? this.travelStyles,
+      friends: friends ?? this.friends, // Handle friends in copyWith
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -235,8 +285,14 @@ class UserFirebaseModel {
       isDiscoverable: isDiscoverable,
       phoneNumber: phoneNumber,
       avatar: avatar,
+      avatarBytes: convertBase64ToImage(avatar),
       interests: interests,
       travelStyles: travelStyles,
+      friends: friends,
     );
+  }
+
+  Friend toFriend() {
+    return Friend(username: username, isAccepted: false);
   }
 }
