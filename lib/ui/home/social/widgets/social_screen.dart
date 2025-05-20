@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:app/data/repositories/user/user_model.dart';
-import 'package:app/domain/models/user.dart'; // Make sure this path is correct
+import 'package:app/domain/models/user.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/home/social/view_models/social_viewmodel.dart';
 import 'package:app/ui/home/social/widgets/user_card.dart';
@@ -31,6 +31,7 @@ class _SocialScreenState extends State<SocialScreen>
 
   final CardSwiperController _swiperController = CardSwiperController();
   bool alreadyHasReachedEnd = false;
+  bool isNotFirstSwipe = false;
   List<User> _currentUserList = [];
   int _currentTopIndex = 0;
   List<Map<String, double?>> _chipPositions = [];
@@ -129,10 +130,6 @@ class _SocialScreenState extends State<SocialScreen>
             context,
           ).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.bold),
         ),
-        actionsPadding: EdgeInsets.only(right: 8.0),
-        actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.undo_outlined)),
-        ],
       ),
       body: StreamBuilder<List<User>>(
         stream: widget.viewModel.watchSimilarPeople(),
@@ -238,12 +235,24 @@ class _SocialScreenState extends State<SocialScreen>
                   ),
                   child: IconButton(
                     icon: Icon(
-                      Icons.undo_outlined,
+                      Icons.person_add_rounded,
                       color: Theme.of(context).colorScheme.onInverseSurface,
                     ),
-                    onPressed:
-                        () => _swiperController.swipe(CardSwiperDirection.left),
-                    padding: EdgeInsets.all(16),
+                    onPressed: () {
+                      if (!isNotFirstSwipe) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          AppSnackBar.show(
+                            context: context,
+                            content: Text(
+                              "You can also swipe to the right to add friend!",
+                            ),
+                            type: "info",
+                          ),
+                        );
+                      }
+                      _swiperController.swipe(CardSwiperDirection.right);
+                      isNotFirstSwipe = true;
+                    },
                   ),
                 ),
               ),

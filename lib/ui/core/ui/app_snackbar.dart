@@ -8,6 +8,7 @@ class AppSnackBar {
     required Widget content,
     required String type,
     String actionLabel = "Dismiss",
+    SnackBarBehavior behavior = SnackBarBehavior.fixed,
     VoidCallback? onPressed,
   }) {
     final Color backgroundColor;
@@ -43,6 +44,7 @@ class AppSnackBar {
       backgroundColor: backgroundColor,
       content: effectiveContent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      behavior: behavior,
       action:
           onPressed != null
               ? SnackBarAction(
