@@ -54,7 +54,7 @@ class SocialViewModel {
   }
 
   Stream<List<User>> watchSimilarPeople() {
-    _similarPeopleStreamCache = _userRepository
+    _similarPeopleStreamCache ??= _userRepository
         .getSimilarPeopleStream()
         .transform(
           StreamTransformer.fromHandlers(handleData: _handleUserTransform),
