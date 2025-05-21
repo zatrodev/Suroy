@@ -19,16 +19,7 @@ class SocialScreen extends StatefulWidget {
 }
 
 class _SocialScreenState extends State<SocialScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _scaleController = AnimationController(
-    duration: const Duration(milliseconds: 300),
-    vsync: this,
-  );
-  late final Animation<double> _scaleAnimation = CurvedAnimation(
-    parent: _scaleController,
-    curve: Curves.bounceInOut,
-  );
-
+    with TickerProviderStateMixin {
   final CardSwiperController _swiperController = CardSwiperController();
   bool alreadyHasReachedEnd = false;
   bool isNotFirstSwipe = false;
@@ -36,11 +27,13 @@ class _SocialScreenState extends State<SocialScreen>
   int _currentTopIndex = 0;
   List<Map<String, double?>> _chipPositions = [];
 
+  final List<AnimationController> _chipAnimationControllers = [];
+  final List<Animation<double>> _chipScaleAnimations = [];
+
   @override
   void initState() {
     widget.viewModel.addFriend.addListener(_onAddFriend);
     super.initState();
-    _scaleController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -50,15 +43,13 @@ class _SocialScreenState extends State<SocialScreen>
         final horizontalMargin = screenWidth * 0.1;
         final cardBottomScreenOffset = 120.0;
 
-        setState(() {
-          _chipPositions = _generateChipPositions(
-            screenWidth,
-            screenHeight,
-            statusBarHeight,
-            horizontalMargin,
-            cardBottomScreenOffset,
-          );
-        });
+        _chipPositions = _generateChipPositions(
+          screenWidth,
+          screenHeight,
+          statusBarHeight,
+          horizontalMargin,
+          cardBottomScreenOffset,
+        );
       }
     });
   }
@@ -66,9 +57,38 @@ class _SocialScreenState extends State<SocialScreen>
   @override
   void dispose() {
     widget.viewModel.addFriend.removeListener(_onAddFriend);
-    _scaleController.dispose();
+    _disposeChipAnimations();
     _swiperController.dispose();
     super.dispose();
+  }
+
+  void _disposeChipAnimations() {
+    for (final controller in _chipAnimationControllers) {
+      controller.dispose();
+    }
+    _chipAnimationControllers.clear();
+    _chipScaleAnimations.clear();
+  }
+
+  void _setupChipAnimations(int numberOfChips) {
+    _disposeChipAnimations();
+
+    if (numberOfChips == 0) return;
+
+    final random = Random();
+    for (int i = 0; i < numberOfChips; i++) {
+      final durationMillis = random.nextInt(800) + 400;
+      print(durationMillis);
+      final controller = AnimationController(
+        duration: Duration(milliseconds: durationMillis),
+        vsync: this,
+      );
+      _chipAnimationControllers.add(controller);
+      _chipScaleAnimations.add(
+        CurvedAnimation(parent: controller, curve: Curves.bounceOut),
+      );
+      controller.forward();
+    }
   }
 
   bool _onSwipe(int oldIndex, int? newIndex, CardSwiperDirection direction) {
@@ -91,8 +111,6 @@ class _SocialScreenState extends State<SocialScreen>
     if (mounted) {
       setState(() {
         _currentTopIndex = newIndex;
-        _scaleController.reset();
-        _scaleController.forward();
       });
     }
 
@@ -140,7 +158,6 @@ class _SocialScreenState extends State<SocialScreen>
           }
 
           if (snapshot.hasError) {
-            print("Error in similar people stream: ${snapshot.error}");
             return const Center(child: Text('Oops! Something went wrong.'));
           }
 
@@ -158,21 +175,33 @@ class _SocialScreenState extends State<SocialScreen>
 
           _currentUserList = snapshot.data!;
           User? currentTopUserForBuild;
+          List<String> currentChipLabels = [];
 
           if (_currentUserList.isNotEmpty) {
             if (_currentTopIndex >= 0 &&
                 _currentTopIndex < _currentUserList.length) {
               currentTopUserForBuild = _currentUserList[_currentTopIndex];
+              currentChipLabels =
+                  (currentTopUserForBuild.interests
+                          .map((interest) => interest.displayName)
+                          .toList() +
+                      currentTopUserForBuild.travelStyles
+                          .map((travelStyle) => travelStyle.displayName)
+                          .toList());
+
+              _setupChipAnimations(currentChipLabels.length);
             } else {
               if (alreadyHasReachedEnd && _currentUserList.isNotEmpty) {
                 currentTopUserForBuild = _currentUserList[0];
                 _currentTopIndex = 0;
               } else {
                 currentTopUserForBuild = null;
+                _setupChipAnimations(0);
               }
             }
           } else {
             currentTopUserForBuild = null;
+            _setupChipAnimations(0);
           }
 
           return Stack(
@@ -211,18 +240,12 @@ class _SocialScreenState extends State<SocialScreen>
               ),
 
               if (currentTopUserForBuild != null &&
-                  (currentTopUserForBuild.interests.isNotEmpty ||
-                      currentTopUserForBuild.travelStyles.isNotEmpty))
+                  currentChipLabels.isNotEmpty &&
+                  _chipScaleAnimations.length == currentChipLabels.length)
                 ..._buildFloatingChips(
-                  currentTopUserForBuild.interests
-                          .map((i) => i.displayName)
-                          .toList() +
-                      currentTopUserForBuild.travelStyles
-                          .map((ts) => ts.displayName)
-                          .toList(),
+                  currentChipLabels,
                   currentTopUserForBuild.colorScheme ??
                       Theme.of(context).colorScheme,
-                  _scaleAnimation,
                 ),
 
               Positioned(
@@ -309,13 +332,13 @@ class _SocialScreenState extends State<SocialScreen>
         'left': cardLeftX + cardWidth * 0.4,
         'right': null,
         'bottom': null,
-      }, // Slightly higher
+      },
       {
         'top': cardTopY - avgChipHeight + verticalEdgeOffset - 5,
         'right': cardHorizontalMargin + cardWidth * 0.4,
         'left': null,
         'bottom': null,
-      }, // Slightly higher
+      },
       {
         'top': cardTopY - avgChipHeight + verticalEdgeOffset,
         'right': cardHorizontalMargin + cardWidth * 0.1,
@@ -323,8 +346,6 @@ class _SocialScreenState extends State<SocialScreen>
         'bottom': null,
       },
 
-      // Group 2: Below Card (4 positions) - Overlapping bottom edge
-      // Positioned by 'top' (chip's top from screen top)
       {
         'top': cardBottomY - verticalEdgeOffset,
         'left': cardLeftX + cardWidth * 0.1,
@@ -336,13 +357,13 @@ class _SocialScreenState extends State<SocialScreen>
         'left': cardLeftX + cardWidth * 0.4,
         'right': null,
         'bottom': null,
-      }, // Slightly lower
+      },
       {
         'top': cardBottomY - verticalEdgeOffset + 5,
         'right': cardHorizontalMargin + cardWidth * 0.4,
         'left': null,
         'bottom': null,
-      }, // Slightly lower
+      },
       {
         'top': cardBottomY - verticalEdgeOffset,
         'right': cardHorizontalMargin + cardWidth * 0.1,
@@ -350,8 +371,6 @@ class _SocialScreenState extends State<SocialScreen>
         'bottom': null,
       },
 
-      // Group 3: Left of Card (4 positions) - Overlapping left edge
-      // Positioned by 'left' (chip's left from screen left) and 'top'
       {
         'top': cardTopY + cardHeight * 0.15,
         'left': cardLeftX - avgChipWidth + horizontalEdgeOffset,
@@ -363,13 +382,13 @@ class _SocialScreenState extends State<SocialScreen>
         'left': cardLeftX - avgChipWidth + horizontalEdgeOffset - 5,
         'right': null,
         'bottom': null,
-      }, // Slightly more to the left
+      },
       {
         'top': cardBottomY - cardHeight * 0.40 - avgChipHeight,
         'left': cardLeftX - avgChipWidth + horizontalEdgeOffset - 5,
         'right': null,
         'bottom': null,
-      }, // Slightly more to the left
+      },
       {
         'top': cardBottomY - cardHeight * 0.15 - avgChipHeight,
         'left': cardLeftX - avgChipWidth + horizontalEdgeOffset,
@@ -377,8 +396,6 @@ class _SocialScreenState extends State<SocialScreen>
         'bottom': null,
       },
 
-      // Group 4: Right of Card (4 positions) - Overlapping right edge
-      // Positioned by 'right' (chip's right from screen right) and 'top'
       {
         'top': cardTopY + cardHeight * 0.15,
         'right': cardHorizontalMargin - avgChipWidth + horizontalEdgeOffset,
@@ -390,13 +407,13 @@ class _SocialScreenState extends State<SocialScreen>
         'right': cardHorizontalMargin - avgChipWidth + horizontalEdgeOffset - 5,
         'left': null,
         'bottom': null,
-      }, // Slightly more to the right
+      },
       {
         'top': cardBottomY - cardHeight * 0.40 - avgChipHeight,
         'right': cardHorizontalMargin - avgChipWidth + horizontalEdgeOffset - 5,
         'left': null,
         'bottom': null,
-      }, // Slightly more to the right
+      },
       {
         'top': cardBottomY - cardHeight * 0.15 - avgChipHeight,
         'right': cardHorizontalMargin - avgChipWidth + horizontalEdgeOffset,
@@ -411,9 +428,13 @@ class _SocialScreenState extends State<SocialScreen>
   List<Widget> _buildFloatingChips(
     List<String> chipsLabel,
     ColorScheme colorScheme,
-    Animation<double> animation,
   ) {
     List<Widget> chipWidgets = [];
+    if (_chipPositions.isEmpty ||
+        _chipScaleAnimations.length != chipsLabel.length) {
+      return chipWidgets;
+    }
+
     final random = Random();
 
     List<Map<String, double?>> selectedPositions = List.from(_chipPositions)
@@ -428,7 +449,7 @@ class _SocialScreenState extends State<SocialScreen>
           right: position['right'],
           bottom: position['bottom'],
           child: ScaleTransition(
-            scale: animation,
+            scale: _chipScaleAnimations[i],
             child: ClipRRect(
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
@@ -445,7 +466,7 @@ class _SocialScreenState extends State<SocialScreen>
                     chipsLabel[i],
                     style: Theme.of(context).textTheme.labelMedium!.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.w500, // Bolder
+                      fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,

@@ -6,6 +6,7 @@ import 'package:app/ui/core/themes/dimens.dart';
 import 'package:app/utils/convert_to_base64.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 enum ProfileHeaderAction { signOut }
 
@@ -90,6 +91,7 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               switch (result) {
                 case ProfileHeaderAction.signOut:
                   await signOut();
+                  context.replace("sign-in");
                   break;
               }
             },
@@ -112,6 +114,10 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       ),
                       onPressed: () async {
                         await signOut();
+
+                        if (context.mounted) {
+                          context.replace("sign-in");
+                        }
                       },
                     ),
                   ),
