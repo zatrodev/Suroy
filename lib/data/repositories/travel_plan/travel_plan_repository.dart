@@ -9,6 +9,7 @@ class TravelPlanRepository extends FirestoreService {
 
   Stream<List<TravelPlan>> getMyTravelPlansStream(String userId) {
     try {
+      // NOTE: no owner id
       return collectionReference
           .where('ownerId', isEqualTo: userId)
           .orderBy('startDate', descending: false)

@@ -1,6 +1,9 @@
 import 'package:app/data/repositories/auth/auth_repository.dart';
+import 'package:app/data/repositories/notification/notification_model.dart';
+import 'package:app/data/repositories/notification/notification_repostiory.dart';
 import 'package:app/data/repositories/travel_plan/travel_plan_repository.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
+import 'package:app/data/services/api/api_client.dart';
 import 'package:app/data/services/internal/image/image_picker_service.dart';
 import 'package:app/domain/use-cases/auth/auth_sign_in_use_case.dart';
 import 'package:app/domain/use-cases/auth/auth_sign_up_use_case.dart';
@@ -14,6 +17,7 @@ List<SingleChildWidget> get providers {
   final imagePickerInstance = ImagePickerService.instance;
 
   return [
+    Provider(create: (context) => ApiClient()),
     ChangeNotifierProvider(create: (context) => AuthRepository()),
     Provider(
       create:
@@ -22,6 +26,13 @@ List<SingleChildWidget> get providers {
     ),
     Provider(
       create: (context) => UserRepository(firestoreInstance: firestoreInstance),
+    ),
+    Provider(
+      create:
+          (context) => NotificationRepository(
+            apiClient: context.read(),
+            firestoreInstance: firestoreInstance,
+          ),
     ),
     Provider(
       create:

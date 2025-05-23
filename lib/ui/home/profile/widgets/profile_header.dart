@@ -17,6 +17,7 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
   late final Uint8List? _avatarBytes;
   late final ImageProvider? _avatarImageProvider;
 
+  // TODO: avatar bytes no longer needed
   ProfileHeaderDelegate({
     required this.user,
     required this.showImageSourceActionSheet,
@@ -91,7 +92,7 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               switch (result) {
                 case ProfileHeaderAction.signOut:
                   await signOut();
-                  context.replace("sign-in");
+                  if (context.mounted) context.replace("sign-in");
                   break;
               }
             },

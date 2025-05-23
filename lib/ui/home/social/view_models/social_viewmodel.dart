@@ -1,3 +1,4 @@
+import 'package:app/data/repositories/notification/notification_repostiory.dart';
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/domain/models/user.dart';
 import 'package:app/utils/command.dart';
@@ -9,12 +10,16 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 
 class SocialViewModel {
-  SocialViewModel({required UserRepository userRepository})
-    : _userRepository = userRepository {
+  SocialViewModel({
+    required UserRepository userRepository,
+    required NotificationRepository notificationRepository,
+  }) : _userRepository = userRepository,
+       _notificationRepository = notificationRepository {
     addFriend = Command1<void, Friend>(_addFriend);
   }
 
   final UserRepository _userRepository;
+  final NotificationRepository _notificationRepository;
   final _log = Logger('SocialViewModel');
 
   late Command1 addFriend;
@@ -74,12 +79,23 @@ class SocialViewModel {
   Future<Result<void>> _addFriend(Friend userToBefriend) async {
     final result = await _userRepository.addFriend(userToBefriend);
 
-    if (result is Error<void>) {
+    if (result is Error<String>) {
       _log.warning('Friend request failed! ${result.error}');
       return Result.error(result.error);
     }
 
     _similarPeopleStreamCache = null;
-    return result;
+
+    final notifResult = await _notificationRepository.sendNotification(
+      _userRepository.userFirebase!.id,
+      (result as Ok<String>).value,
+    );
+
+    switch (notifResult) {
+      case Ok<void>():
+        return Result.ok({});
+      case Error<void>():
+        return Result.error(notifResult.error);
+    }
   }
 }

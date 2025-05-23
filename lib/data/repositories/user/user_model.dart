@@ -142,6 +142,7 @@ class UserFirebaseModel {
   final String lastName;
   final String username;
   final String email;
+  final List<String> fcmTokens;
   final List<Interest> interests;
   final List<TravelStyle> travelStyles;
   final bool isDiscoverable;
@@ -157,6 +158,7 @@ class UserFirebaseModel {
     required this.lastName,
     required this.username,
     required this.email,
+    this.fcmTokens = const [],
     this.phoneNumber,
     this.interests = const [],
     this.travelStyles = const [],
@@ -175,6 +177,7 @@ class UserFirebaseModel {
       'lastName': lastName,
       'username': username,
       'phoneNumber': phoneNumber,
+      'fcmTokens': fcmTokens,
       'email': email,
       'interests': interests.map((interest) => interest.name).toList(),
       'travelStyles': travelStyles.map((style) => style.name).toList(),
@@ -209,8 +212,6 @@ class UserFirebaseModel {
             )
             .toList();
 
-    print("AFTER INTEREST");
-
     List<TravelStyle> travelStyleList =
         (data['travelStyles'] as List<dynamic>? ?? [])
             .map(
@@ -220,11 +221,14 @@ class UserFirebaseModel {
             )
             .toList();
 
-    print("AFTER TRAVEL STYLE");
-
     List<Friend> friendsList =
         (data['friends'] as List<dynamic>? ?? [])
             .map((friend) => Friend.fromJson(friend))
+            .toList();
+
+    List<String> fcmTokens =
+        (data['fcmTokens'] as List<dynamic>? ?? [])
+            .map((token) => token.toString())
             .toList();
 
     return UserFirebaseModel(
@@ -234,6 +238,7 @@ class UserFirebaseModel {
       username: data['username'] ?? '',
       phoneNumber: data['phoneNumber'] ?? '',
       email: data['email'] ?? '',
+      fcmTokens: fcmTokens,
       avatar: data['avatar'],
       isDiscoverable: data['isDiscoverable'],
       interests: interestsList,
@@ -252,6 +257,7 @@ class UserFirebaseModel {
     String? phoneNumber,
     String? avatar,
     String? email,
+    List<String>? fcmTokens,
     bool? isDiscoverable,
     List<Interest>? interests,
     List<TravelStyle>? travelStyles,
@@ -267,10 +273,11 @@ class UserFirebaseModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       avatar: avatar ?? this.avatar,
       email: email ?? this.email,
+      fcmTokens: fcmTokens ?? this.fcmTokens,
       isDiscoverable: isDiscoverable ?? this.isDiscoverable,
       interests: interests ?? this.interests,
       travelStyles: travelStyles ?? this.travelStyles,
-      friends: friends ?? this.friends, // Handle friends in copyWith
+      friends: friends ?? this.friends,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -26,6 +26,7 @@ class _SocialScreenState extends State<SocialScreen>
   List<User> _currentUserList = [];
   int _currentTopIndex = 0;
   List<Map<String, double?>> _chipPositions = [];
+  String? _lastSwipedUsernameForToast;
 
   final List<AnimationController> _chipAnimationControllers = [];
   final List<Animation<double>> _chipScaleAnimations = [];
@@ -78,7 +79,6 @@ class _SocialScreenState extends State<SocialScreen>
     final random = Random();
     for (int i = 0; i < numberOfChips; i++) {
       final durationMillis = random.nextInt(800) + 400;
-      print(durationMillis);
       final controller = AnimationController(
         duration: Duration(milliseconds: durationMillis),
         vsync: this,
@@ -94,6 +94,11 @@ class _SocialScreenState extends State<SocialScreen>
   bool _onSwipe(int oldIndex, int? newIndex, CardSwiperDirection direction) {
     if (newIndex == null) return false;
     if (newIndex >= _currentUserList.length) {
+      if (mounted) {
+        setState(() {
+          _currentTopIndex = newIndex;
+        });
+      }
       return false;
     }
 
@@ -104,6 +109,7 @@ class _SocialScreenState extends State<SocialScreen>
         username: swipedUser.username,
         isAccepted: false,
       );
+      _lastSwipedUsernameForToast = swipedUser.username;
 
       widget.viewModel.addFriend.execute(friendToAdd);
     }
@@ -162,6 +168,20 @@ class _SocialScreenState extends State<SocialScreen>
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            if (_currentUserList.isNotEmpty && mounted) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _currentTopIndex != 0) {
+                  setState(() {
+                    _currentTopIndex = 0;
+                    _setupChipAnimations(0);
+                  });
+                } else if (mounted && _chipAnimationControllers.isNotEmpty) {
+                  _setupChipAnimations(0);
+                }
+              });
+            }
+            _currentUserList = snapshot.data ?? [];
+
             return Center(
               child: Text(
                 "No new people around right now.\nTry adding more interests and travel styles!",
@@ -173,36 +193,49 @@ class _SocialScreenState extends State<SocialScreen>
             );
           }
 
-          _currentUserList = snapshot.data!;
+          final newList = snapshot.data!;
+          _currentUserList = newList;
+
+          int newEffectiveTopIndex = _currentTopIndex;
+          if (_currentUserList.isNotEmpty) {
+            if (newEffectiveTopIndex >= _currentUserList.length) {
+              newEffectiveTopIndex = _currentUserList.length - 1;
+            }
+            if (newEffectiveTopIndex < 0) {
+              newEffectiveTopIndex = 0;
+            }
+          } else {
+            newEffectiveTopIndex = 0;
+          }
+
+          if (_currentTopIndex != newEffectiveTopIndex) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && _currentTopIndex != newEffectiveTopIndex) {
+                setState(() {
+                  _currentTopIndex = newEffectiveTopIndex;
+                });
+              }
+            });
+          }
           User? currentTopUserForBuild;
           List<String> currentChipLabels = [];
 
           if (_currentUserList.isNotEmpty) {
-            if (_currentTopIndex >= 0 &&
-                _currentTopIndex < _currentUserList.length) {
-              currentTopUserForBuild = _currentUserList[_currentTopIndex];
-              currentChipLabels =
-                  (currentTopUserForBuild.interests
-                          .map((interest) => interest.displayName)
-                          .toList() +
-                      currentTopUserForBuild.travelStyles
-                          .map((travelStyle) => travelStyle.displayName)
-                          .toList());
-
-              _setupChipAnimations(currentChipLabels.length);
-            } else {
-              if (alreadyHasReachedEnd && _currentUserList.isNotEmpty) {
-                currentTopUserForBuild = _currentUserList[0];
-                _currentTopIndex = 0;
-              } else {
-                currentTopUserForBuild = null;
-                _setupChipAnimations(0);
-              }
-            }
-          } else {
-            currentTopUserForBuild = null;
-            _setupChipAnimations(0);
+            currentTopUserForBuild = _currentUserList[newEffectiveTopIndex];
+            currentChipLabels =
+                (currentTopUserForBuild.interests
+                        .map((i) => i.displayName)
+                        .toList() +
+                    currentTopUserForBuild.travelStyles
+                        .map((ts) => ts.displayName)
+                        .toList());
           }
+
+          _setupChipAnimations(currentChipLabels.length);
+
+          final cardSwiperKey = ValueKey(
+            "${_currentUserList.length}-${newEffectiveTopIndex}",
+          );
 
           return Stack(
             children: [
@@ -212,6 +245,8 @@ class _SocialScreenState extends State<SocialScreen>
                 right: horizontalMargin,
                 bottom: cardBottomScreenOffset,
                 child: CardSwiper(
+                  key: cardSwiperKey,
+                  initialIndex: newEffectiveTopIndex,
                   controller: _swiperController,
                   numberOfCardsDisplayed: min(3, _currentUserList.length),
                   cardsCount: _currentUserList.length,
@@ -229,6 +264,8 @@ class _SocialScreenState extends State<SocialScreen>
                     percentThresholdY,
                   ) {
                     final user = _currentUserList[index];
+                    print("INDEX: $index");
+                    print("CURRENT USER LIST: $_currentUserList");
 
                     return UserCard(
                       user: user,
@@ -263,15 +300,15 @@ class _SocialScreenState extends State<SocialScreen>
                     ),
                     onPressed: () {
                       if (!isNotFirstSwipe) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          AppSnackBar.show(
-                            context: context,
-                            content: Text(
-                              "You can also swipe to the right to add friend!",
-                            ),
-                            type: "info",
-                          ),
-                        );
+                        // ScaffoldMessenger.of(context).showSnackBar(
+                        //   AppSnackBar.show(
+                        //     context: context,
+                        //     content: Text(
+                        //       "You can also swipe to the right to add friend!",
+                        //     ),
+                        //     type: "info",
+                        //   ),
+                        // );
                       }
                       _swiperController.swipe(CardSwiperDirection.right);
                       isNotFirstSwipe = true;
@@ -287,17 +324,19 @@ class _SocialScreenState extends State<SocialScreen>
   }
 
   void _onAddFriend() {
-    if (!mounted) return;
+    if (!mounted || _lastSwipedUsernameForToast == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       AppSnackBar.show(
         context: context,
         content: Text(
-          "Friend request to ${_currentUserList[_currentTopIndex].username} was sent successfully.",
+          "Friend request to $_lastSwipedUsernameForToast was sent successfully.",
         ),
         type: "success",
       ),
     );
+
+    _lastSwipedUsernameForToast = null;
   }
 
   List<Map<String, double?>> _generateChipPositions(

@@ -7,4 +7,5 @@ abstract final class Routes {
   static const editProfile = "/profile/$editProfileRelative";
   static const editProfileRelative = "edit";
   static const travelPlanDetails = "/travel-plan/:id";
+  static const notifications = "/notifications";
 }

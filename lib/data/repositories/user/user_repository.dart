@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/services/firebase/firestore_service.dart';
@@ -18,6 +19,7 @@ class UserRepository extends FirestoreService {
       _currentUserModelController.stream.map((model) => model?.toUser());
 
   User? get user => _currentUserModelController.value?.toUser();
+  UserFirebaseModel? get userFirebase => _currentUserModelController.value;
 
   StreamSubscription? _authSubscription;
   StreamSubscription? _userDocumentSubscription;
@@ -82,7 +84,6 @@ class UserRepository extends FirestoreService {
   Future<Result<void>> createUser(UserFirebaseModel user) async {
     try {
       await collectionReference.doc(user.id).set(user.toJson());
-      // No need to update, for _onAuthStateChanged will pick it up
       return Result.ok(null);
     } on FirebaseException catch (e) {
       print(
@@ -262,6 +263,37 @@ class UserRepository extends FirestoreService {
     }
   }
 
+  Future<Result<String>> updateFCMTokens(String token) async {
+    try {
+      if (_currentUserModelController.value == null || userFirebase == null) {
+        return Result.error(Exception("Cannot update null user;"));
+      }
+
+      if (userFirebase!.fcmTokens.contains(token)) {
+        return Result.ok("Token already in user");
+      }
+
+      List<String> updatedTokens = userFirebase!.fcmTokens;
+      updatedTokens.add(token);
+
+      await collectionReference.doc(userFirebase!.id).update({
+        'fcmTokens': updatedTokens,
+      });
+      print(
+        'UserRepository: FCM Tokens updated successfully in Firestore for user ID: ${userFirebase!.id}',
+      );
+      return Result.ok(token);
+    } on FirebaseException catch (e) {
+      return Result.error(
+        Exception(
+          'Firebase error updating FCM Token: ${e.message} (Code: ${e.code})',
+        ),
+      );
+    } on Exception catch (e) {
+      return Result.error(Exception('Generic error updating FCM Token: $e'));
+    }
+  }
+
   Future<Result<void>> updateUserProfile(User userToUpdate) async {
     final currentModel = _currentUserModelController.value;
     if (currentModel == null ||
@@ -298,7 +330,7 @@ class UserRepository extends FirestoreService {
     }
   }
 
-  Future<Result<void>> addFriend(Friend userToBefriend) async {
+  Future<Result<String>> addFriend(Friend userToBefriend) async {
     final currentModel = _currentUserModelController.value;
     if (currentModel == null) {
       return Result.error(Exception('No user loaded to add a friend to.'));
@@ -345,9 +377,7 @@ class UserRepository extends FirestoreService {
         "UserRepository: Added ${currentModel.username} to ${userToBefriend.username}'s friends list in Firestore.",
       );
 
-      return Result.ok(
-        "Friend request to ${userToBefriend.username} sent successfully.",
-      );
+      return Result.ok(friendDocId);
     } on FirebaseException catch (e) {
       print("UserRepository: Firebase error adding friend: ${e.message}");
       return Result.error(Exception(e.message));
@@ -461,6 +491,24 @@ class UserRepository extends FirestoreService {
     _userDocumentSubscription?.cancel();
     _currentUserModelController.close();
     // _similarPeopleStream is managed by switchMap, will clean up itself.
+  }
+
+  Future<Result<Uint8List?>> getAvatarBytesOfUser(String userId) async {
+    try {
+      final docSnapshot = await collectionReference.doc(userId).get();
+
+      if (docSnapshot.exists) {
+        final userFirebase = UserFirebaseModel.fromFirestore(docSnapshot);
+        return Result.ok(userFirebase.toUser().avatarBytes);
+      } else {
+        print('UserRepository: User not found for ID: $userId');
+        return Result.error(Exception("User with ID $userId not found."));
+      }
+    } on FirebaseException catch (e) {
+      return Result.error(Exception(e.message));
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
   }
 
   // getEmailByUsername seems independent of cached user, so it can remain as is.

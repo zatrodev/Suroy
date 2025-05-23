@@ -1,6 +1,8 @@
+import 'package:app/routing/routes.dart';
 import 'package:app/ui/home/plans/widgets/create_travel_plan_sheet.dart';
 import 'package:app/ui/home/plans/widgets/travel_plan_card.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class PlansScreen extends StatefulWidget {
   const PlansScreen({super.key});
@@ -77,6 +79,14 @@ class _PlansScreenState extends State<PlansScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Travel Plans'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.go(Routes.notifications);
+            },
+            icon: Icon(Icons.notifications),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
