@@ -32,7 +32,7 @@ class SignInViewModel {
     final (identifier, password) = credentials;
     final signInResult = await _signInUseCase
         .signInWithEmailOrUsernameAndPassword(
-          identifier: identifier,
+          identifier: identifier.trim(),
           password: password,
         );
 
