@@ -173,11 +173,7 @@ class _PlansScreenState extends State<PlansScreen> {
           FloatingActionButton(
             heroTag: null,
             onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                builder: (context) => const CreateTravelPlanSheet(),
-              );
+              context.go(Routes.addPlan);
             },
             child: const Icon(Icons.add),
           ),

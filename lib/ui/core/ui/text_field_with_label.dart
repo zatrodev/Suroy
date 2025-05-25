@@ -12,8 +12,10 @@ class TextFieldWithLabel extends StatefulWidget {
     this.inputFormatters,
     this.validator,
     this.onChanged,
+    this.onSubmit,
     this.isPasswordType = false,
     this.suffixIcon,
+    this.focusNode,
   });
 
   final String label;
@@ -22,7 +24,9 @@ class TextFieldWithLabel extends StatefulWidget {
   final TextInputType keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
+  final FocusNode? focusNode;
   final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmit;
   final bool obscureText;
   final bool isPasswordType;
   final Widget? suffixIcon;
@@ -84,8 +88,10 @@ class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
           inputFormatters: widget.inputFormatters,
           controller: widget.controller,
           validator: widget.validator,
+          focusNode: widget.focusNode,
           obscureText: _isObscured,
           onChanged: widget.onChanged,
+          onFieldSubmitted: widget.onSubmit,
           autovalidateMode: AutovalidateMode.onUserInteraction,
         ),
       ],

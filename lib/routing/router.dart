@@ -6,6 +6,7 @@ import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/routing/transitions/slide_transition_page.dart';
 import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/ui/home/home.dart';
+import 'package:app/ui/home/plans/add/widgets/add_travel_plan_screen.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/edit/view_models/edit_profile_viewmodel.dart';
 import 'package:app/ui/home/profile/edit/widgets/edit_profile_screen.dart';
@@ -66,9 +67,6 @@ GoRouter router(AuthRepository authRepository) {
                         /* viewModel: context.read<PlansViewModel>() */
                       ),
                     ),
-                // Example of nested routes within the Plans tab:
-                // routes: [
-                //   GoRoute(path: 'details/:id', builder: (c,s) => PlanDetailsScreen(id: s.pathParameters['id']!)),
                 // ],
                 routes: <RouteBase>[
                   GoRoute(
@@ -84,6 +82,18 @@ GoRouter router(AuthRepository authRepository) {
                             ),
                           ),
                         ),
+                  ),
+                  GoRoute(
+                    path: Routes.addPlanRelative, // This will be 'add'
+                    pageBuilder: (context, state) {
+                      return SlideTransitionPage(
+                        key: state.pageKey,
+                        slideDirection: SlideDirection.bottomToTop,
+                        child: AddTravelPlanScreen(
+                          // viewModel: context.read<AddTravelPlanViewModel>(), // When your VM is ready
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

@@ -87,7 +87,6 @@ class Accommodation {
   final DateTime? checkInDate;
   final DateTime? checkOutDate;
   final String? bookingReference;
-  // Add other fields like 'type' (Hotel, Airbnb), 'contact' etc. if needed
 
   Accommodation({
     this.name,
@@ -194,7 +193,7 @@ class ItineraryItem {
 // --- Main TravelPlan Model ---
 
 class TravelPlan {
-  final String id; // Firestore Document ID
+  String? id; // Firestore Document ID
   String name;
   DateTime startDate;
   DateTime endDate;
@@ -215,7 +214,7 @@ class TravelPlan {
   DateTime updatedAt;
 
   TravelPlan({
-    required this.id,
+    this.id,
     required this.name,
     required this.startDate,
     required this.endDate,
@@ -285,7 +284,6 @@ class TravelPlan {
 
   Map<String, dynamic> toJson() {
     return {
-      // ID is the document ID, not stored in the fields
       'name': name,
       'startDate': Timestamp.fromDate(startDate),
       'endDate': Timestamp.fromDate(endDate),
