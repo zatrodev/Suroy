@@ -92,7 +92,7 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
               switch (result) {
                 case ProfileHeaderAction.signOut:
                   await signOut();
-                  if (context.mounted) context.replace("sign-in");
+                  if (context.mounted) context.replace("/sign-in");
                   break;
               }
             },
@@ -117,7 +117,7 @@ class ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         await signOut();
 
                         if (context.mounted) {
-                          context.replace("sign-in");
+                          context.replace("/sign-in");
                         }
                       },
                     ),

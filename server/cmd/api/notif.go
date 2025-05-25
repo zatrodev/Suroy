@@ -58,6 +58,7 @@ func (app *application) sendNotificationHandler(w http.ResponseWriter, r *http.R
 		SenderUID:   input.SenderUID,
 		RecieverUID: input.ReceiverUID,
 		CreatedAt:   time.Now(),
+		Type:        "friend",
 	}
 
 	if err = app.services.Firestore.CreateNotification(r.Context(), *notificationData); err != nil {

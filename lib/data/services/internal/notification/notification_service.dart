@@ -1,20 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app/data/repositories/user/user_repository.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-// Import your navigation helper or specific screens if needed for deep linking
-// import 'package:app/navigation/navigation_service.dart';
-// import 'package:app/ui/travel_plan/travel_plan_detail_screen.dart';
 
-// Must be a top-level function or static method for background message handling
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // If you're going to use other Firebase services in the background,
-  // make sure you call `initializeApp` before using other Firebase services.
-  await Firebase.initializeApp(); // Ensure Firebase is initialized for background isolate
+  // If you're going to use other Firebase services in the background, like Firestore,
+  // make sure you call `initializeApp` before using them.
+  await Firebase.initializeApp();
 
   print("Handling a background message: ${message.messageId}");
   print("Background Message data: ${message.data}");
@@ -24,39 +21,45 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     );
   }
 
-  // OPTIONAL: If you receive a data-only message in the background
-  // and want to display a local notification, do it here.
-  // FCM messages with a "notification" payload are usually handled by the system
-  // when the app is in the background/terminated.
   if (message.data.isNotEmpty && message.notification == null) {
-    // Example: Construct and show a local notification from data payload
     final localNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    // Basic initialization for background - ensure icons are set up.
-    // This might need more robust setup if not already done in main.
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-          '@mipmap/ic_launcher',
-        ); // Use your app icon
-    const DarwinInitializationSettings initializationSettingsIOS =
-        DarwinInitializationSettings();
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    // For iOS, ensure you have appropriate permissions set up.
+    // requestAlertPermission, requestBadgePermission, requestSoundPermission
+    // can be set to true if you want the notification to appear while app is in background.
+    // However, FCM data messages are usually for silent updates or to trigger local notifications.
+    const DarwinInitializationSettings
+    initializationSettingsIOS = DarwinInitializationSettings(
+      // defaultPresentAlert: true, // Decide if data-only messages should show an alert by default
+      // defaultPresentBadge: true,
+      // defaultPresentSound: true,
+    );
     const InitializationSettings initializationSettings =
         InitializationSettings(
           android: initializationSettingsAndroid,
           iOS: initializationSettingsIOS,
         );
-    await localNotificationsPlugin.initialize(initializationSettings);
+    // It's important this initialize call is lightweight and doesn't depend on UI.
+    // Ensure this doesn't cause issues if called multiple times or if main isolate already did.
+    // A common pattern is to use a flag or check if already initialized.
+    try {
+      await localNotificationsPlugin.initialize(initializationSettings);
+    } catch (e) {
+      print("Error initializing local_notifications in background: $e");
+      // Potentially, it's already initialized by the main app instance if it was recently alive.
+    }
 
     final int notificationId =
         message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch;
     final String title = message.data['title'] ?? 'New Message';
     final String body = message.data['body'] ?? 'You have a new message.';
-    final String? payload =
-        message.data['payload']; // e.g., 'travel_plan_id:xyz'
+    final String? payload = message.data['payload'];
 
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-          'your_channel_id_data_messages', // Unique channel ID
-          'Data Messages', // Channel name
+          'your_channel_id_data_messages',
+          'Data Messages',
           channelDescription:
               'Channel for data messages received in background.',
           importance: Importance.max,
@@ -92,30 +95,30 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  final StreamController<String?> _fcmTokenStreamController =
-      StreamController<String?>.broadcast();
-  Stream<String?> get fcmTokenStream => _fcmTokenStreamController.stream;
+  String? _currentFcmToken;
+  String? get currentFcmToken => _currentFcmToken;
 
-  // For handling notification taps (both local and FCM that opens app)
-  // The payload will typically be what you set in `message.data['payload']` or local notification payload
   final StreamController<String?> _notificationPayloadStreamController =
       StreamController<String?>.broadcast();
   Stream<String?> get onNotificationPayload =>
       _notificationPayloadStreamController.stream;
 
-  Future<void> init(BuildContext? context) async {
-    // Context is optional, for navigation
-    await _requestPermissions();
-    await _initializeLocalNotifications(context);
-    _configureFirebaseMessagingListeners(context);
-    _fetchAndStreamInitialToken();
+  UserRepository? _userRepository;
 
-    // Handle token refresh
+  Future<void> init({required UserRepository userRepository}) async {
+    _userRepository = userRepository;
+
+    await _requestPermissions();
+    await _initializeLocalNotifications();
+    _configureFirebaseMessagingListeners();
+    await _fetchInitialTokenAndSave(); // Fetch and save the initial token
+
     _firebaseMessaging.onTokenRefresh.listen((newToken) {
       print("FCM Token Refreshed: $newToken");
-      _fcmTokenStreamController.add(newToken);
-      // You should save this newToken to your backend for the user
-      // E.g., yourUserRepository.updateFCMToken(newToken);
+      _currentFcmToken = newToken;
+      if (_userRepository != null) {
+        _userRepository!.updateFCMTokens(newToken);
+      }
     });
   }
 
@@ -126,8 +129,7 @@ class NotificationService {
       badge: true,
       carPlay: false,
       criticalAlert: false,
-      provisional:
-          false, // Set to true if you want provisional authorization on iOS
+      provisional: false,
       sound: true,
     );
 
@@ -140,7 +142,6 @@ class NotificationService {
       print('User declined or has not accepted FCM permission');
     }
 
-    // For Android 13+, specifically request local notification permission if needed
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           _localNotificationsPlugin
@@ -153,14 +154,28 @@ class NotificationService {
     }
   }
 
-  Future<void> _initializeLocalNotifications(BuildContext? context) async {
+  Future<void> _initializeLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-          '@mipmap/ic_launcher',
-        ); // Replace with your app icon
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    // For iOS, specify notification presentation options when app is in foreground
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+          requestAlertPermission:
+              true, // Directly request permission if not already handled by FCM
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+          defaultPresentAlert: true, // Show alert even if app is in foreground
+          defaultPresentBadge:
+              true, // Update badge count even if app is in foreground
+          defaultPresentSound: true, // Play sound even if app is in foreground
+        );
 
     final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS, // Add iOS settings
+        );
 
     await _localNotificationsPlugin.initialize(
       initializationSettings,
@@ -174,8 +189,7 @@ class NotificationService {
     );
   }
 
-  void _configureFirebaseMessagingListeners(BuildContext? context) {
-    // For messages received when the app is in the foreground
+  void _configureFirebaseMessagingListeners() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print('Foreground FCM Message Received:');
       print('Message ID: ${message.messageId}');
@@ -185,28 +199,20 @@ class NotificationService {
           'Message also contained a notification: ${message.notification!.title} - ${message.notification!.body}',
         );
       }
-
-      // Display a local notification for foreground messages for consistent UX
-      // Or, you could show an in-app banner.
       _showLocalNotificationFromRemoteMessage(message);
     });
 
-    // For messages that open the app from a background state (not terminated)
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       print('FCM Message opened app from background:');
       print('Message ID: ${message.messageId}');
       final String? payload =
-          message.data['payload'] ??
-          message.data['travelPlanId']; // Or however you structure it
+          message.data['payload'] ?? message.data['travelPlanId'];
       if (payload != null) {
         print("Payload from onMessageOpenedApp: $payload");
         _notificationPayloadStreamController.add(payload);
       }
-      // Handle navigation if context is available or via a global navigator key
-      // e.g., _handlePayloadNavigation(payload, context);
     });
 
-    // Check if app was opened from a terminated state by a notification
     _firebaseMessaging.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
         print('FCM Message opened app from terminated state:');
@@ -215,36 +221,39 @@ class NotificationService {
             message.data['payload'] ?? message.data['travelPlanId'];
         if (payload != null) {
           print("Payload from getInitialMessage: $payload");
-          // It's common to pass this initial payload to your first screen
-          // or handle it once your app's navigation is ready.
-          // For now, we'll add to stream, listening widgets can pick it up.
           _notificationPayloadStreamController.add(payload);
         }
-        // e.g., _handlePayloadNavigation(payload, context);
       }
     });
   }
 
-  Future<void> _fetchAndStreamInitialToken() async {
+  Future<void> _fetchInitialTokenAndSave() async {
+    if (_userRepository == null) {
+      print("UserRepository not initialized. Cannot save FCM token.");
+      return;
+    }
+
     try {
-      String? token = await _firebaseMessaging.getToken();
+      String? token;
+      token = await _firebaseMessaging.getToken();
+
       if (token != null) {
         print("Initial FCM Token: $token");
-        _fcmTokenStreamController.add(token);
+        _currentFcmToken = token;
+        await _userRepository!.updateFCMTokens(token);
       } else {
+        _currentFcmToken = null;
         print("Failed to get initial FCM token.");
-        _fcmTokenStreamController.add(null);
       }
     } catch (e) {
+      _currentFcmToken = null;
       print("Error fetching initial FCM token: $e");
-      _fcmTokenStreamController.addError(e);
     }
   }
 
   Future<void> _showLocalNotificationFromRemoteMessage(
     RemoteMessage message,
   ) async {
-    // Use details from FCM message if available, otherwise fallback or use data payload
     final String title =
         message.notification?.title ??
         message.data['title'] ??
@@ -253,34 +262,33 @@ class NotificationService {
         message.notification?.body ??
         message.data['body'] ??
         'You have a new message.';
-    // Consistent payload key from your Cloud Function's data part
     final String? payload =
         message.data['payload'] ?? message.data['travelPlanId'];
 
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-          'your_channel_id_foreground', // Unique channel ID for foreground
-          'Foreground Notifications', // Channel name
+          'your_channel_id_foreground',
+          'Foreground Notifications',
           channelDescription:
               'Channel for notifications received while app is in foreground.',
           importance: Importance.max,
           priority: Priority.high,
-          // icon: '@mipmap/ic_launcher', // Optional: if different from default
         );
+    // iOS will show notifications in foreground by default if permission is granted
+    // and if defaultPresentAlert/Badge/Sound are true in DarwinInitializationSettings
+    // or if you set these in DarwinNotificationDetails.
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-      presentSound: true,
+      presentAlert: true, // Ensure it shows while app is foreground
       presentBadge: true,
-      presentAlert: true,
-    ); // iOS will show if app is foreground by default with these
+      presentSound: true,
+    );
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
 
     await _localNotificationsPlugin.show(
-      message.messageId?.hashCode ??
-          DateTime.now()
-              .millisecondsSinceEpoch, // Unique ID for the notification
+      message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
       title,
       body,
       notificationDetails,
@@ -288,7 +296,6 @@ class NotificationService {
     );
   }
 
-  // Optional: A helper to display a generic local notification
   Future<void> showSimpleLocalNotification({
     required int id,
     required String title,
@@ -297,8 +304,8 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-          'your_channel_id_generic', // Unique channel ID
-          'Generic App Notifications', // Channel name
+          'your_channel_id_generic',
+          'Generic App Notifications',
           channelDescription: 'Channel for generic app notifications.',
           importance: Importance.max,
           priority: Priority.high,
@@ -323,23 +330,22 @@ class NotificationService {
   }
 
   void dispose() {
-    _fcmTokenStreamController.close();
     _notificationPayloadStreamController.close();
+    // No FCM token stream controller to close anymore
   }
 }
 
-// Top-level function for local notification background tap handling (iOS specific for older versions, Android uses onDidReceiveBackgroundNotificationResponse)
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  // handle action
   print(
     'Local Notification Tapped in Background (notificationTapBackground): ${notificationResponse.payload}',
   );
-  // This handler is for flutter_local_notifications.
-  // You might want to unify payload handling logic or ensure it doesn't conflict
-  // with FCM's onMessageOpenedApp or getInitialMessage if the origin is an FCM message
-  // that was then displayed locally.
-  // For simplicity, if NotificationService._notificationPayloadStreamController is accessible statically
-  // or through a singleton, you could add to it here. But that's tricky from a separate isolate.
-  // Better to handle the payload when the app fully starts based on the response.
+  // IMPORTANT: This function runs in a separate isolate.
+  // You CANNOT directly access NotificationService._instance or its streams here.
+  // If you need to pass data to the main app, consider:
+  // 1. Saving to SharedPreferences and reading it when the app starts.
+  // 2. Using a package like `flutter_isolate` or `IsolateNameServer` for communication (more complex).
+  // For now, this payload will be handled by `onDidReceiveNotificationResponse` when the app is opened.
+  // The _notificationPayloadStreamController.add() in onDidReceiveNotificationResponse
+  // will handle it when the app comes to the foreground from this tap.
 }

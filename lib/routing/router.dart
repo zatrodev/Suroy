@@ -1,13 +1,10 @@
 import 'dart:async';
 
 import 'package:app/data/repositories/auth/auth_repository.dart';
-import 'package:app/data/repositories/user/user_repository.dart';
-import 'package:app/data/services/internal/notification/notification_service.dart';
 import 'package:app/routing/routes.dart';
 import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/routing/transitions/slide_transition_page.dart';
 import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
-import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/home/home.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/edit/view_models/edit_profile_viewmodel.dart';
@@ -16,7 +13,8 @@ import 'package:app/ui/home/profile/view_models/profile_viewmodel.dart';
 import 'package:app/ui/home/profile/widgets/profile_screen.dart';
 import 'package:app/ui/home/social/view_models/social_viewmodel.dart';
 import 'package:app/ui/home/social/widgets/social_screen.dart';
-import 'package:app/utils/result.dart';
+import 'package:app/ui/notifications/view_models/notification_viewmodel.dart';
+import 'package:app/ui/notifications/widgets/notification_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -24,8 +22,6 @@ import 'package:provider/provider.dart';
 GoRouter router(AuthRepository authRepository) {
   final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
-
-  final NotificationService notificationService = NotificationService();
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -51,61 +47,12 @@ GoRouter router(AuthRepository authRepository) {
         },
       ),
       StatefulShellRoute.indexedStack(
-        builder: (
-          BuildContext context,
-          GoRouterState state,
-          StatefulNavigationShell navigationShell,
-        ) {
-          // TODO: move to Home?
-          notificationService.init(context);
-
-          notificationService.fcmTokenStream.listen((token) async {
-            if (token != null) {
-              if (!context.mounted) return;
-
-              final result = await context
-                  .read<UserRepository>()
-                  .updateFCMTokens(token);
-
-              if (context.mounted) {
-                switch (result) {
-                  case Ok<String>():
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      AppSnackBar.show(
-                        context: context,
-                        content: Text(result.value),
-                        type: "success",
-                      ),
-                    );
-                  case Error<String>():
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      AppSnackBar.show(
-                        context: context,
-                        content: Text(result.error.toString()),
-                        type: "error",
-                      ),
-                    );
-                }
-              }
-            }
-          });
-
-          notificationService.onNotificationPayload.listen((payload) {
-            print("Notification Payload received in UI: $payload");
-            if (payload != null) {
-              // Handle navigation based on payload
-              // Example:
-              // if (payload.startsWith("travel_plan_id:")) {
-              //   final planId = payload.split(":")[1];
-              //   Navigator.of(context).push(MaterialPageRoute(builder: (_) => TravelPlanDetailScreen(planId: planId)));
-              //   // Or use your navigatorKey:
-              //   // navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => TravelPlanDetailScreen(planId: planId)));
-              // }
-            }
-          });
-
-          return Home(navigationShell: navigationShell);
-        },
+        builder:
+            (
+              BuildContext context,
+              GoRouterState state,
+              StatefulNavigationShell navigationShell,
+            ) => Home(navigationShell: navigationShell),
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
             routes: <RouteBase>[
@@ -123,6 +70,22 @@ GoRouter router(AuthRepository authRepository) {
                 // routes: [
                 //   GoRoute(path: 'details/:id', builder: (c,s) => PlanDetailsScreen(id: s.pathParameters['id']!)),
                 // ],
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: Routes.notificationsRelative,
+                    pageBuilder:
+                        (context, state) => SlideTransitionPage(
+                          key: state.pageKey,
+                          slideDirection: SlideDirection.rightToLeft,
+                          child: NotificationScreen(
+                            viewModel: NotificationViewModel(
+                              userRepository: context.read(),
+                              notificationRepository: context.read(),
+                            ),
+                          ),
+                        ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,6 +1,8 @@
 import 'package:app/ui/notifications/view_models/notification_viewmodel.dart';
 import 'package:app/data/repositories/notification/notification_model.dart'
     as local;
+import 'package:app/ui/notifications/widgets/notification_tile.dart';
+import 'package:app/utils/timeago.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,13 +52,28 @@ class NotificationScreen extends StatelessWidget {
           }
 
           final _notifications = snapshot.data!;
+          print("NOTIFICATIONS $_notifications");
 
           // TODO: display notifications
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: ListView(
-              padding: const EdgeInsets.all(8),
-              children: <Widget>[_notifications.map((notification) => Row()],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, // Or as needed
+              children: <Widget>[
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _notifications.length,
+                  itemBuilder: (context, index) {
+                    final notification = _notifications[index];
+
+                    return NotificationTile(
+                      notification: notification,
+                      viewModel: viewModel,
+                    );
+                  },
+                ),
+              ],
             ),
           );
         },

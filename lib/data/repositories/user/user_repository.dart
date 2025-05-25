@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/services/firebase/firestore_service.dart';
@@ -265,7 +264,7 @@ class UserRepository extends FirestoreService {
 
   Future<Result<String>> updateFCMTokens(String token) async {
     try {
-      if (_currentUserModelController.value == null || userFirebase == null) {
+      if (_currentUserModelController.value == null) {
         return Result.error(Exception("Cannot update null user;"));
       }
 
@@ -388,7 +387,7 @@ class UserRepository extends FirestoreService {
   }
 
   // ... (acceptFriendRequest needs similar reactive adjustment if it modifies current user)
-  Future<Result<void>> acceptFriendRequest(Friend acceptedFriendRequest) async {
+  Future<Result<void>> acceptFriendRequest(String friendId) async {
     final currentModel = _currentUserModelController.value;
     if (currentModel == null) {
       return Result.error(
@@ -396,15 +395,24 @@ class UserRepository extends FirestoreService {
       );
     }
 
+    final friendUserDoc = await collectionReference.doc(friendId).get();
+    if (!friendUserDoc.exists) {
+      print(
+        "UserRepository: Error accepting friend request - friend $friendId not found.",
+      );
+      return Result.error(Exception("Friend $friendId not found."));
+    }
+
+    final friendUserData = UserFirebaseModel.fromFirestore(friendUserDoc);
+
     print(
-      "UserRepository: User ${currentModel.username} attempting to accept friend request from ${acceptedFriendRequest.username}",
+      "UserRepository: User ${currentModel.username} attempting to accept friend request from ${friendUserData.username}",
     );
 
     try {
-      // 1. Update current user's friend entry to isAccepted: true
       final List<Map<String, dynamic>> updatedMyFriends =
           currentModel.friends.map((f) {
-            if (f.username == acceptedFriendRequest.username) {
+            if (f.username == friendUserData.username) {
               return f.copyWith(isAccepted: true).toJson();
             }
             return f.toJson();
@@ -414,49 +422,26 @@ class UserRepository extends FirestoreService {
         "friends": updatedMyFriends,
       });
       print(
-        "UserRepository: Updated ${acceptedFriendRequest.username} to accepted in ${currentModel.username}'s friend list.",
-      );
-
-      // 2. Update the other user's friend entry (for me) to isAccepted: true
-      final friendUserDoc =
-          await collectionReference
-              .where("username", isEqualTo: acceptedFriendRequest.username)
-              .limit(1)
-              .get();
-
-      if (friendUserDoc.docs.isEmpty) {
-        print(
-          "UserRepository: Error accepting friend request - friend ${acceptedFriendRequest.username} not found.",
-        );
-        // Potentially rollback previous update or handle error
-        return Result.error(
-          Exception("Friend ${acceptedFriendRequest.username} not found."),
-        );
-      }
-      final friendUserId = friendUserDoc.docs.first.id;
-      final friendUserData = UserFirebaseModel.fromFirestore(
-        friendUserDoc.docs.first,
+        "UserRepository: Updated ${friendUserData.username} to accepted in ${currentModel.username}'s friend list.",
       );
 
       final List<Map<String, dynamic>> updatedTheirFriends =
           friendUserData.friends.map((f) {
             if (f.username == currentModel.username) {
-              // I am the friend in their list
               return f.copyWith(isAccepted: true).toJson();
             }
             return f.toJson();
           }).toList();
 
-      await collectionReference.doc(friendUserId).update({
+      await collectionReference.doc(friendId).update({
         "friends": updatedTheirFriends,
       });
       print(
-        "UserRepository: Updated ${currentModel.username} to accepted in ${acceptedFriendRequest.username}'s friend list.",
+        "UserRepository: Updated ${currentModel.username} to accepted in ${friendUserData.username}'s friend list.",
       );
 
-      // Firestore listeners will update the respective UserFirebaseModels if they are being listened to.
       return Result.ok(
-        "Friend request from ${acceptedFriendRequest.username} accepted.",
+        "Friend request from ${friendUserData.username} accepted.",
       );
     } on FirebaseException catch (e) {
       print(
@@ -465,6 +450,61 @@ class UserRepository extends FirestoreService {
       return Result.error(Exception("Firebase error: ${e.message}"));
     } on Exception catch (e) {
       print("UserRepository: Generic error accepting friend request: $e");
+      return Result.error(e);
+    }
+  }
+
+  Future<Result<void>> removeFriendRequest(String friendId) async {
+    final currentModel = _currentUserModelController.value;
+    if (currentModel == null) {
+      return Result.error(
+        Exception('No user loaded to remove a friend request for.'),
+      );
+    }
+
+    final friendUserDoc = await collectionReference.doc(friendId).get();
+    if (!friendUserDoc.exists) {
+      print(
+        "UserRepository: Error accepting friend request - friend $friendId not found.",
+      );
+      return Result.error(Exception("Friend $friendId not found."));
+    }
+
+    final friendUserData = UserFirebaseModel.fromFirestore(friendUserDoc);
+
+    try {
+      final updatedMyFriends = currentModel.friends;
+      updatedMyFriends.removeWhere(
+        (f) => f.username == friendUserData.username,
+      );
+
+      await collectionReference.doc(currentModel.id).update({
+        "friends": updatedMyFriends,
+      });
+
+      final updatedTheirFriends = friendUserData.friends;
+      friendUserData.friends.removeWhere(
+        (f) => f.username == currentModel.username,
+      );
+
+      await collectionReference.doc(friendId).update({
+        "friends": updatedTheirFriends,
+      });
+
+      print(
+        "UserRepository: Removed ${friendUserData.username} on ${currentModel.username}",
+      );
+
+      return Result.ok(
+        "Friend request from ${friendUserData.username} removed.",
+      );
+    } on FirebaseException catch (e) {
+      print(
+        "UserRepository: Firebase error removing friend request: ${e.message}",
+      );
+      return Result.error(Exception("Firebase error: ${e.message}"));
+    } on Exception catch (e) {
+      print("UserRepository: Generic error removing friend request: $e");
       return Result.error(e);
     }
   }
@@ -493,23 +533,23 @@ class UserRepository extends FirestoreService {
     // _similarPeopleStream is managed by switchMap, will clean up itself.
   }
 
-  Future<Result<Uint8List?>> getAvatarBytesOfUser(String userId) async {
-    try {
-      final docSnapshot = await collectionReference.doc(userId).get();
-
-      if (docSnapshot.exists) {
-        final userFirebase = UserFirebaseModel.fromFirestore(docSnapshot);
-        return Result.ok(userFirebase.toUser().avatarBytes);
-      } else {
-        print('UserRepository: User not found for ID: $userId');
-        return Result.error(Exception("User with ID $userId not found."));
-      }
-    } on FirebaseException catch (e) {
-      return Result.error(Exception(e.message));
-    } on Exception catch (e) {
-      return Result.error(e);
-    }
-  }
+  // Future<Result<Uint8List?>> getAvatarBytesOfUser(String userId) async {
+  //   try {
+  //     final docSnapshot = await collectionReference.doc(userId).get();
+  //
+  //     if (docSnapshot.exists) {
+  //       final userFirebase = UserFirebaseModel.fromFirestore(docSnapshot);
+  //       return Result.ok(userFirebase.toUser());
+  //     } else {
+  //       print('UserRepository: User not found for ID: $userId');
+  //       return Result.error(Exception("User with ID $userId not found."));
+  //     }
+  //   } on FirebaseException catch (e) {
+  //     return Result.error(Exception(e.message));
+  //   } on Exception catch (e) {
+  //     return Result.error(e);
+  //   }
+  // }
 
   // getEmailByUsername seems independent of cached user, so it can remain as is.
   // Keep it if it's used.

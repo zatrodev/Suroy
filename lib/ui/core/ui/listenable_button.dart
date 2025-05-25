@@ -6,12 +6,16 @@ class ListenableButton extends StatelessWidget {
     super.key,
     required this.label,
     this.icon,
+    this.buttonStyle,
+    this.loadingIconColor,
     required this.command,
     required this.onPressed,
   });
 
   final String label;
   final IconData? icon;
+  final ButtonStyle? buttonStyle;
+  final Color? loadingIconColor;
   final Command command;
   final VoidCallback? onPressed;
 
@@ -24,16 +28,22 @@ class ListenableButton extends StatelessWidget {
         return FilledButton.icon(
           icon:
               isLoading
-                  ? const Padding(
+                  ? Padding(
                     padding: EdgeInsets.only(right: 4.0),
                     child: SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2.0),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        color: loadingIconColor,
+                      ),
                     ),
                   )
-                  : Icon(icon),
+                  : icon != null
+                  ? Icon(icon)
+                  : SizedBox.shrink(),
           label: Padding(padding: EdgeInsets.all(8.0), child: Text(label)),
+          style: buttonStyle,
           onPressed: isLoading ? null : onPressed,
         );
       },

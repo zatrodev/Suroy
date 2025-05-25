@@ -7,8 +7,10 @@ class Notification {
   final String body;
   final String senderId;
   final String receiverId;
-  final DateTime createdAt;
+  final Timestamp createdAt;
+  final String type;
   Uint8List? senderAvatarBytes;
+  String senderInitials;
 
   Notification({
     required this.id,
@@ -17,7 +19,9 @@ class Notification {
     required this.senderId,
     required this.receiverId,
     required this.createdAt,
+    required this.type,
     this.senderAvatarBytes,
+    this.senderInitials = "",
   });
 
   factory Notification.fromFirestore(
@@ -35,6 +39,7 @@ class Notification {
       senderId: data["senderId"] ?? "",
       receiverId: data["receiverId"] ?? "",
       createdAt: data["createdAt"] ?? "",
+      type: data["type"] ?? "",
     );
   }
 }

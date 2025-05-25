@@ -171,6 +171,7 @@ class _PlansScreenState extends State<PlansScreen> {
           ),
           SizedBox(height: 16),
           FloatingActionButton(
+            heroTag: null,
             onPressed: () {
               showModalBottomSheet(
                 context: context,

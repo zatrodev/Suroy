@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:app/data/repositories/notification/notification_model.dart';
 import 'package:app/data/repositories/notification/notification_repostiory.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
+import 'package:app/domain/models/user.dart';
+import 'package:app/utils/command.dart';
 import 'package:app/utils/result.dart';
-import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 
 class NotificationViewModel {
@@ -12,7 +13,17 @@ class NotificationViewModel {
     required UserRepository userRepository,
     required NotificationRepository notificationRepository,
   }) : _userRepository = userRepository,
-       _notificationRepository = notificationRepository;
+       _notificationRepository = notificationRepository {
+    acceptFriendRequest = Command1<void, (String, String)>(
+      _acceptFriendRequest,
+    );
+    removeFriendRequest = Command1<void, (String, String)>(
+      _removeFriendRequest,
+    );
+  }
+
+  late Command1 acceptFriendRequest;
+  late Command1 removeFriendRequest;
 
   final UserRepository _userRepository;
   final NotificationRepository _notificationRepository;
@@ -34,15 +45,16 @@ class NotificationViewModel {
 
       final futureNotification = Future(() async {
         try {
-          final result = await _userRepository.getAvatarBytesOfUser(
+          final result = await _userRepository.getUserById(
             notification.senderId,
           );
 
           switch (result) {
-            case Ok<Uint8List?>():
-              notification.senderAvatarBytes = result.value;
+            case Ok<User>():
+              notification.senderAvatarBytes = result.value.avatarBytes;
+              notification.senderInitials = result.value.initials;
               return notification;
-            case Error<Uint8List?>():
+            case Error<User?>():
               return notification;
           }
         } catch (e) {
@@ -76,5 +88,30 @@ class NotificationViewModel {
         });
 
     return _myNotificationStreamCache!;
+  }
+
+  Future<Result<void>> _acceptFriendRequest((String, String) args) async {
+    final (friendId, notificationId) = args;
+
+    final result = await _userRepository.acceptFriendRequest(friendId);
+
+    if (result is Error<void>) {
+      _log.warning("Add friend request failed");
+      return Result.error(result.error);
+    }
+
+    return _notificationRepository.deleteNotification(notificationId);
+  }
+
+  Future<Result<void>> _removeFriendRequest((String, String) args) async {
+    final (friendId, notificationId) = args;
+    final result = await _userRepository.removeFriendRequest(friendId);
+
+    if (result is Error<void>) {
+      _log.warning("Remove friend request failed");
+      return Result.error(result.error);
+    }
+
+    return _notificationRepository.deleteNotification(notificationId);
   }
 }

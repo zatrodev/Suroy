@@ -19,6 +19,7 @@ type NotificationPayload struct {
 	SenderUID   string    `firestore:"senderId"`
 	RecieverUID string    `firestore:"receiverId"`
 	CreatedAt   time.Time `firestore:"createdAt"`
+	Type        string    `firestore:"type"`
 }
 
 type UserPayload struct {
