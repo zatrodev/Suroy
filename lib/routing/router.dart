@@ -6,7 +6,9 @@ import 'package:app/ui/auth/login/view_models/sign_in_viewmodel.dart';
 import 'package:app/routing/transitions/slide_transition_page.dart';
 import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/ui/home/home.dart';
+import 'package:app/ui/home/plans/add/view_models/add_travel_plan_viewmodel.dart';
 import 'package:app/ui/home/plans/add/widgets/add_travel_plan_screen.dart';
+import 'package:app/ui/home/plans/view_models/plans_viewmodel.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/edit/view_models/edit_profile_viewmodel.dart';
 import 'package:app/ui/home/profile/edit/widgets/edit_profile_screen.dart';
@@ -63,8 +65,11 @@ GoRouter router(AuthRepository authRepository) {
                     (context, state) => NoTransitionPage(
                       key: state.pageKey,
                       // For MVVM, you'd instantiate/provide PlansViewModel here
-                      child: const PlansScreen(
-                        /* viewModel: context.read<PlansViewModel>() */
+                      child: PlansScreen(
+                        viewModel: TravelPlanViewmodel(
+                          travelPlanRepository: context.read(),
+                          userRepository: context.read(),
+                        ),
                       ),
                     ),
                 // ],
@@ -90,7 +95,10 @@ GoRouter router(AuthRepository authRepository) {
                         key: state.pageKey,
                         slideDirection: SlideDirection.bottomToTop,
                         child: AddTravelPlanScreen(
-                          // viewModel: context.read<AddTravelPlanViewModel>(), // When your VM is ready
+                          viewModel: AddTravelPlanViewmodel(
+                            travelPlanRepository: context.read(),
+                            userRepository: context.read(),
+                          ),
                         ),
                       );
                     },

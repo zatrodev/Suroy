@@ -1,84 +1,47 @@
+import 'package:app/data/repositories/travel_plan/travel_plan_model.dart';
 import 'package:app/routing/routes.dart';
-import 'package:app/ui/home/plans/widgets/create_travel_plan_sheet.dart';
+import 'package:app/ui/home/plans/view_models/plans_viewmodel.dart';
+import 'package:app/ui/home/plans/widgets/shared_travel_plan_card.dart';
 import 'package:app/ui/home/plans/widgets/travel_plan_card.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class PlansScreen extends StatefulWidget {
-  const PlansScreen({super.key});
+  const PlansScreen({super.key, required this.viewModel});
+
+  final TravelPlanViewmodel viewModel;
 
   @override
   State<PlansScreen> createState() => _PlansScreenState();
 }
 
 class _PlansScreenState extends State<PlansScreen> {
+  final CarouselController _carouselController = CarouselController(
+    initialItem: 1,
+  );
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  // Sample travel plans data
-  final List<Map<String, String>> _allTravelPlans = [
-    {
-      'id': '1',
-      'name': 'Summer Vacation',
-      'dateRange': '2024-07-01 - 2024-07-15',
-      'location': 'Bali, Indonesia',
-    },
-    {
-      'id': '2',
-      'name': 'Business Trip',
-      'dateRange': '2024-05-10 - 2024-05-12',
-      'location': 'Tokyo, Japan',
-    },
-    {
-      'id': '3',
-      'name': 'Beach Getaway',
-      'dateRange': '2024-08-15 - 2024-08-20',
-      'location': 'Boracay, Philippines',
-    },
-    {
-      'id': '4',
-      'name': 'Mountain Retreat',
-      'dateRange': '2024-06-01 - 2024-06-05',
-      'location': 'Sagada, Philippines',
-    },
-  ];
-
-  List<Map<String, String>> get _filteredTravelPlans {
-    if (_searchQuery.isEmpty) {
-      return _allTravelPlans;
-    }
-
-    final query = _searchQuery.toLowerCase();
-    return _allTravelPlans.where((plan) {
-      return plan['name']!.toLowerCase().contains(query) ||
-          plan['location']!.toLowerCase().contains(query);
-    }).toList();
-  }
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Travel Plans'),
+        title: Text(
+          'Suroy',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge!.copyWith(fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
             onPressed: () {
@@ -93,11 +56,14 @@ class _PlansScreenState extends State<PlansScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: TextField(
               controller: _searchController,
+              onChanged:
+                  (value) => widget.viewModel.updateSearchText(value.trim()),
+              style: Theme.of(context).textTheme.bodyMedium,
               decoration: InputDecoration(
-                hintText: 'Search trips by name or location',
+                hintText: 'Search your trips by name or location',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon:
-                    _searchQuery.isNotEmpty
+                    widget.viewModel.searchText.isNotEmpty
                         ? IconButton(
                           icon: const Icon(Icons.clear),
                           onPressed: () {
@@ -110,53 +76,191 @@ class _PlansScreenState extends State<PlansScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor:
-                    Theme.of(context).colorScheme.surfaceContainerHighest,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
             ),
           ),
         ),
       ),
-      body:
-          _filteredTravelPlans.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.search_off,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No travel plans found',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Try a different search or create a new plan',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            StreamBuilder<List<TravelPlan>>(
+              stream: widget.viewModel.watchMyTravelPlans(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Oops! Something went wrong.'),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  if (widget.viewModel.searchText.isNotEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 40.0,
+                        horizontal: 16.0,
                       ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No plans match your search',
+                            style: Theme.of(context).textTheme.titleMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Try a different search term or clear the search.',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 40.0,
+                          horizontal: 16.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.luggage_outlined,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            const SizedBox(width: 20),
+                            Column(
+                              children: [
+                                Text(
+                                  'You have no travel plans yet.',
+                                  style:
+                                      Theme.of(context).textTheme.titleMedium,
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  'Tap the "+" button to create one!',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                }
+
+                final travelPlans = snapshot.data!;
+                print("TRAVEL PLANS: $travelPlans");
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 16.0,
+                          ),
+                          child: Text(
+                            "Your travel plans",
+                            style: Theme.of(context).textTheme.titleMedium!
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        AspectRatio(
+                          aspectRatio: 4 / 3,
+                          child: CarouselView(
+                            itemExtent: double.infinity,
+                            controller: _carouselController,
+                            itemSnapping: true,
+                            children:
+                                travelPlans
+                                    .map((plan) => TravelPlanCard(plan: plan))
+                                    .toList(),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              )
-              : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _filteredTravelPlans.length,
-                itemBuilder: (context, index) {
-                  final plan = _filteredTravelPlans[index];
-                  return TravelPlanCard(
-                    id: plan['id']!,
-                    name: plan['name']!,
-                    dateRange: plan['dateRange']!,
-                    location: plan['location']!,
+                );
+              },
+            ),
+            StreamBuilder<List<TravelPlan>>(
+              stream: widget.viewModel.watchSharedTravelPlans(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Oops! Something went wrong.'),
                   );
-                },
-              ),
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return SizedBox.shrink();
+                }
+
+                final sharedTravelPlans = snapshot.data!;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12.0,
+                    horizontal: 16.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 16,
+                    children: [
+                      Text(
+                        "Shared with you",
+                        style: Theme.of(context).textTheme.titleMedium!
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: sharedTravelPlans.length,
+                        itemBuilder: (context, index) {
+                          final plan = sharedTravelPlans[index];
+                          return SharedTravelPlanCard(plan: plan);
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [

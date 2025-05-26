@@ -9,7 +9,6 @@ class TravelPlanRepository extends FirestoreService {
 
   Stream<List<TravelPlan>> getMyTravelPlansStream(String userId) {
     try {
-      // NOTE: no owner id
       return collectionReference
           .where('ownerId', isEqualTo: userId)
           .orderBy('startDate', descending: false)
@@ -30,10 +29,12 @@ class TravelPlanRepository extends FirestoreService {
     }
   }
 
-  Stream<List<TravelPlan>> getSharedTravelPlansStream(String userId) {
+  Stream<List<TravelPlan>> getSharedTravelPlansStream(
+    List<String> friendsUsernames,
+  ) {
     try {
       return collectionReference
-          .where('sharedWith', arrayContains: userId)
+          .where('ownerId', whereIn: friendsUsernames)
           .orderBy('startDate', descending: false)
           .snapshots()
           .map(

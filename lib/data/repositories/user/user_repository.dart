@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:app/data/repositories/user/user_model.dart';
 import 'package:app/data/services/firebase/firestore_service.dart';
 import 'package:app/domain/models/user.dart';
+import 'package:app/utils/convert_to_base64.dart';
 import 'package:app/utils/result.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
@@ -533,23 +535,32 @@ class UserRepository extends FirestoreService {
     // _similarPeopleStream is managed by switchMap, will clean up itself.
   }
 
-  // Future<Result<Uint8List?>> getAvatarBytesOfUser(String userId) async {
-  //   try {
-  //     final docSnapshot = await collectionReference.doc(userId).get();
-  //
-  //     if (docSnapshot.exists) {
-  //       final userFirebase = UserFirebaseModel.fromFirestore(docSnapshot);
-  //       return Result.ok(userFirebase.toUser());
-  //     } else {
-  //       print('UserRepository: User not found for ID: $userId');
-  //       return Result.error(Exception("User with ID $userId not found."));
-  //     }
-  //   } on FirebaseException catch (e) {
-  //     return Result.error(Exception(e.message));
-  //   } on Exception catch (e) {
-  //     return Result.error(e);
-  //   }
-  // }
+  Future<Result<Uint8List?>> getAvatarBytesOByUsername(String username) async {
+    try {
+      final querySnapshot =
+          await collectionReference
+              .where('username', isEqualTo: username)
+              .limit(1)
+              .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return Result.error(Exception("User $username does not exist."));
+      }
+
+      final userData = querySnapshot.docs.first.data();
+      final avatar = userData['avatar'];
+      if (avatar is String || avatar != null) {
+        final avatarBytes = convertBase64ToImage(avatar);
+        return Result.ok(avatarBytes);
+      } else {
+        return Result.ok(null);
+      }
+    } on FirebaseException catch (e) {
+      return Result.error(Exception(e.message));
+    } on Exception catch (e) {
+      return Result.error(e);
+    }
+  }
 
   // getEmailByUsername seems independent of cached user, so it can remain as is.
   // Keep it if it's used.

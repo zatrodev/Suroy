@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart'; // For checklist item IDs etc.
 
@@ -199,7 +201,6 @@ class TravelPlan {
   DateTime endDate;
   LocationData location; // Main trip location
   String ownerId; // User ID of the creator
-  List<String> sharedWith; // List of User IDs it's shared with
 
   // Optional fields
   FlightDetails? flightDetails;
@@ -213,6 +214,9 @@ class TravelPlan {
   DateTime createdAt;
   DateTime updatedAt;
 
+  String thumbnail;
+  Uint8List? ownerAvatar;
+
   TravelPlan({
     this.id,
     required this.name,
@@ -220,7 +224,6 @@ class TravelPlan {
     required this.endDate,
     required this.location,
     required this.ownerId,
-    this.sharedWith = const [],
     this.flightDetails,
     this.accommodation,
     this.notes,
@@ -228,6 +231,8 @@ class TravelPlan {
     this.itinerary,
     required this.createdAt,
     required this.updatedAt,
+    required this.thumbnail,
+    this.ownerAvatar,
   });
 
   TravelPlan copyWith({
@@ -237,8 +242,6 @@ class TravelPlan {
     DateTime? endDate,
     LocationData? location,
     String? ownerId,
-    List<String>? sharedWith,
-    // Use ValueGetter for explicit null setting on nullable fields if needed
     Maybe<FlightDetails?>? flightDetailsOrNull,
     Maybe<Accommodation?>? accommodationOrNull,
     Maybe<String?>? notesOrNull,
@@ -246,6 +249,8 @@ class TravelPlan {
     Maybe<Map<String, List<ItineraryItem>>?>? itineraryOrNull,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? thumbnail,
+    Uint8List? ownerAvatar,
   }) {
     return TravelPlan(
       id: id ?? this.id,
@@ -256,11 +261,6 @@ class TravelPlan {
           location ??
           this.location, // Assumes LocationData is immutable or has its own copyWith if needed for deep copies
       ownerId: ownerId ?? this.ownerId,
-      sharedWith:
-          sharedWith ??
-          List.unmodifiable(
-            this.sharedWith,
-          ), // Create new list if provided, else use existing
       // Handle setting optional fields to null explicitly if needed
       flightDetails:
           flightDetailsOrNull != null ? flightDetailsOrNull() : flightDetails,
@@ -277,6 +277,8 @@ class TravelPlan {
               : (itinerary != null ? Map.unmodifiable(itinerary!) : null),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      thumbnail: thumbnail ?? this.thumbnail,
+      ownerAvatar: ownerAvatar,
     );
   }
 
@@ -289,7 +291,6 @@ class TravelPlan {
       'endDate': Timestamp.fromDate(endDate),
       'location': location.toJson(), // Use helper model toJson
       'ownerId': ownerId,
-      'sharedWith': sharedWith,
       'flightDetails':
           flightDetails?.toJson(), // Use helper model toJson or null
       'accommodation':
@@ -306,6 +307,7 @@ class TravelPlan {
       ),
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      'thumbnail': thumbnail,
     };
   }
 
@@ -347,10 +349,6 @@ class TravelPlan {
         data['location'] as Map<String, dynamic>? ?? {},
       ), // Handle null location map
       ownerId: data['ownerId'] ?? '', // Handle missing owner
-      sharedWith: List<String>.from(
-        data['sharedWith'] ?? [],
-      ), // Handle missing sharedWith
-      // Handle optional nested models
       flightDetails:
           data['flightDetails'] != null
               ? FlightDetails.fromJson(
@@ -377,6 +375,9 @@ class TravelPlan {
 
       createdAt: (data['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+      thumbnail:
+          data['thumbnail'] ??
+          "https://images.unsplash.com/photo-1587226513115-f1e3439f1a35?q=80&w=2984&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     );
   }
 }
