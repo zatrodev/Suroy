@@ -105,11 +105,7 @@ class TravelPlanViewmodel {
     if (username == null) return Stream.empty();
 
     _sharedTravelPlansStreamCache ??= _travelPlanRepository
-        .getSharedTravelPlansStream(
-          _userRepository.user!.friends
-              .map((friend) => friend.username)
-              .toList(),
-        )
+        .getSharedTravelPlansStream(_userRepository.user!.username)
         .transform(
           StreamTransformer.fromHandlers(
             handleData: handleSharedTravelPlanAvatar,

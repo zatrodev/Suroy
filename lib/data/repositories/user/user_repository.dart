@@ -602,4 +602,16 @@ class UserRepository extends FirestoreService {
       return Result.error(error);
     }
   }
+
+  List<String> getCurrentUserFriends() {
+    final currentModel = _currentUserModelController.value;
+    if (currentModel == null) {
+      return [];
+    }
+
+    return currentModel.friends
+        .where((friend) => friend.isAccepted == true)
+        .map((friend) => friend.username)
+        .toList();
+  }
 }

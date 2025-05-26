@@ -195,20 +195,18 @@ class ItineraryItem {
 // --- Main TravelPlan Model ---
 
 class TravelPlan {
-  String? id; // Firestore Document ID
+  String? id;
   String name;
   DateTime startDate;
   DateTime endDate;
-  LocationData location; // Main trip location
-  String ownerId; // User ID of the creator
+  LocationData location;
+  String ownerId;
+  List<String> sharedWith;
 
-  // Optional fields
   FlightDetails? flightDetails;
   Accommodation? accommodation;
   String? notes;
   List<ChecklistItem>? checklist;
-  // Itinerary: Map where key is the Date (e.g., "YYYY-MM-DD")
-  // and value is a list of itinerary items for that day.
   Map<String, List<ItineraryItem>>? itinerary;
 
   DateTime createdAt;
@@ -224,6 +222,7 @@ class TravelPlan {
     required this.endDate,
     required this.location,
     required this.ownerId,
+    this.sharedWith = const [],
     this.flightDetails,
     this.accommodation,
     this.notes,
@@ -242,6 +241,7 @@ class TravelPlan {
     DateTime? endDate,
     LocationData? location,
     String? ownerId,
+    List<String>? sharedWith,
     Maybe<FlightDetails?>? flightDetailsOrNull,
     Maybe<Accommodation?>? accommodationOrNull,
     Maybe<String?>? notesOrNull,
@@ -261,7 +261,7 @@ class TravelPlan {
           location ??
           this.location, // Assumes LocationData is immutable or has its own copyWith if needed for deep copies
       ownerId: ownerId ?? this.ownerId,
-      // Handle setting optional fields to null explicitly if needed
+      sharedWith: sharedWith ?? List.unmodifiable(this.sharedWith),
       flightDetails:
           flightDetailsOrNull != null ? flightDetailsOrNull() : flightDetails,
       accommodation:
@@ -291,6 +291,7 @@ class TravelPlan {
       'endDate': Timestamp.fromDate(endDate),
       'location': location.toJson(), // Use helper model toJson
       'ownerId': ownerId,
+      'sharedWith': sharedWith,
       'flightDetails':
           flightDetails?.toJson(), // Use helper model toJson or null
       'accommodation':
@@ -349,6 +350,7 @@ class TravelPlan {
         data['location'] as Map<String, dynamic>? ?? {},
       ), // Handle null location map
       ownerId: data['ownerId'] ?? '', // Handle missing owner
+      sharedWith: List<String>.from(data['sharedWith'] ?? []),
       flightDetails:
           data['flightDetails'] != null
               ? FlightDetails.fromJson(

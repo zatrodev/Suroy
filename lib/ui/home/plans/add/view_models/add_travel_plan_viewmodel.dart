@@ -50,11 +50,11 @@ class AddTravelPlanViewmodel {
     }
 
     final imageUrl = await _fetchLocationImage(plan.location.name);
-    _log.info("IMAGE: $imageUrl");
 
     final result = await _travelPlanRepository.addTravelPlan(
       plan.copyWith(
         ownerId: _userRepository.user!.username,
+        sharedWith: _userRepository.getCurrentUserFriends(),
         thumbnail: imageUrl,
       ),
     );

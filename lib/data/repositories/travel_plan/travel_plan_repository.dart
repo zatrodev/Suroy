@@ -29,12 +29,10 @@ class TravelPlanRepository extends FirestoreService {
     }
   }
 
-  Stream<List<TravelPlan>> getSharedTravelPlansStream(
-    List<String> friendsUsernames,
-  ) {
+  Stream<List<TravelPlan>> getSharedTravelPlansStream(String username) {
     try {
       return collectionReference
-          .where('ownerId', whereIn: friendsUsernames)
+          .where('sharedWith', arrayContains: username)
           .orderBy('startDate', descending: false)
           .snapshots()
           .map(
