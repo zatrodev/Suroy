@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:app/data/repositories/travel_plan/travel_plan_model.dart';
 import 'package:http/http.dart' as http;
 
-// Replace with your actual Geoapify API Key
 const String _geoapifyApiKey =
     '0489b0942304447f9009aba75c8e7784'; // <-- IMPORTANT: PUT YOUR KEY HERE
 
@@ -52,9 +51,8 @@ class GeoapifySuggestion {
 
   LocationData toLocationData() {
     return LocationData(
-      name:
-          name, // Or displayText, depending on what you prefer as primary name
-      address: displayText, // The formatted address is good here
+      name: name != "N/A" ? name : displayText,
+      address: displayText,
       latitude: latitude,
       longitude: longitude,
     );

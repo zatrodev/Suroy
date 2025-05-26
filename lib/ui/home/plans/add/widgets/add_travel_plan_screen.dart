@@ -1,22 +1,23 @@
 import 'package:app/data/repositories/travel_plan/travel_plan_model.dart';
 import 'package:app/data/services/geoapify/geoapify_service.dart';
+import 'package:app/routing/routes.dart';
 import 'package:app/ui/core/ui/app_snackbar.dart';
+import 'package:app/ui/core/ui/listenable_button.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
+import 'package:app/ui/home/plans/add/view_models/add_travel_plan_viewmodel.dart';
 import 'package:app/ui/home/plans/add/widgets/map_picker_screen.dart';
+import 'package:app/ui/home/plans/widgets/add_edit_itinerary_item_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart' as latlong2;
 import 'package:uuid/uuid.dart';
 
 class AddTravelPlanScreen extends StatefulWidget {
-  // When you create your ViewModel, you'll pass it here:
-  // final AddTravelPlanViewModel viewModel;
+  const AddTravelPlanScreen({super.key, required this.viewModel});
 
-  const AddTravelPlanScreen({
-    super.key,
-    // required this.viewModel,
-  });
+  final AddTravelPlanViewmodel viewModel;
 
   @override
   State<AddTravelPlanScreen> createState() => _AddTravelPlanScreenState();
@@ -28,22 +29,25 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
   final _locationNameController = TextEditingController();
   final _notesController = TextEditingController();
 
-  final _locationTextController = TextEditingController(); // For TypeAhead
+  final _locationTextController = TextEditingController();
   final GeoapifyService _geoapifyService = GeoapifyService();
-  LocationData? _selectedLocation; // This will hold the final chosen location;
+  LocationData? _selectedLocation;
 
   DateTimeRange? _selectedDateRange;
 
-  bool _isLoading = false;
   final Uuid _uuid = const Uuid();
 
-  List<bool> _areOptionalSectionsExpanded = [
+  final List<bool> _areOptionalSectionsExpanded = [
     false,
     false,
     false,
-  ]; // Flight, Accommodation, Checklist
+    false,
+  ]; // Itinerary, Flight, Accommodation, Checklist
 
-  // --- Flight Details State ---
+  final Map<String, List<ItineraryItem>> _itineraryData = {};
+  String? _selectedItineraryDateKey;
+  DateTime? _currentlySelectedDayForItinerary;
+
   FlightDetails? _flightDetails;
   final _flightAirlineController = TextEditingController();
   final _flightNumberController = TextEditingController();
@@ -53,7 +57,6 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
   DateTime? _flightDepartureDateTime;
   DateTime? _flightArrivalDateTime;
 
-  // --- Accommodation Details State ---
   Accommodation? _accommodation;
   final _accNameController = TextEditingController();
   final _accAddressController = TextEditingController();
@@ -61,12 +64,14 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
   DateTime? _accCheckInDate;
   DateTime? _accCheckOutDate;
 
-  // --- Checklist State ---
-  List<ChecklistItem> _checklistItems = [];
+  final List<ChecklistItem> _checklistItems = [];
   final _newChecklistItemController = TextEditingController();
 
-  // In a real app, this would come from your authentication service
-  final String _currentUserId = "dummy_user_id_123";
+  @override
+  void initState() {
+    super.initState();
+    widget.viewModel.addTravelPlan.addListener(_onAddTravelPlanResult);
+  }
 
   @override
   void dispose() {
@@ -92,11 +97,8 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
 
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
-    final firstDate = now; // Users can't pick past dates for a new trip range
-    final lastDate = now.add(
-      const Duration(days: 365 * 5),
-    ); // e.g., 5 years into the future
-
+    final firstDate = now;
+    final lastDate = now.add(const Duration(days: 365 * 5));
     final pickedDateRange = await showDateRangePicker(
       context: context,
       initialDateRange: _selectedDateRange,
@@ -144,7 +146,7 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
       initialTime: TimeOfDay.fromDateTime(initialDateTime ?? date),
     );
 
-    if (time == null) return date; // User might only pick date
+    if (time == null) return date;
 
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
@@ -175,31 +177,63 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
     }
   }
 
-  Future<void> _saveTravelPlan() async {
-    if (_selectedDateRange == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppSnackBar.show(
-          context: context,
-          content: Text('Please select a date range.'),
-          type: "error",
-        ),
-      );
-      return;
-    }
+  TravelPlan? _collatetoTravelPlan() {
+    // if (_selectedDateRange == null) {
+    //   ScaffoldMessenger.of(context).showSnackBar(
+    //     AppSnackBar.show(
+    //       context: context,
+    //       content: Text('Please select a date range.'),
+    //       type: "error",
+    //     ),
+    //   );
+    //   return null;
+    // }
     if (_selectedLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        AppSnackBar.show(
-          context: context,
-          content: Text('Please enter and confirm the main destination.'),
-          type: "error",
-        ),
-      );
-      return;
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   AppSnackBar.show(
+      //     context: context,
+      //     content: Text('Please enter and confirm the main destination.'),
+      //     type: "error",
+      //   ),
+      // );
+      return null;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    if (_flightAirlineController.text.isNotEmpty ||
+        _flightNumberController.text.isNotEmpty ||
+        _flightDepartureAirportController.text.isNotEmpty ||
+        _flightArrivalAirportController.text.isNotEmpty ||
+        _flightBookingRefController.text.isNotEmpty ||
+        _flightDepartureDateTime != null ||
+        _flightArrivalDateTime != null) {
+      _flightDetails = FlightDetails(
+        airline: _flightAirlineController.text.trim(),
+        flightNumber: _flightNumberController.text.trim(),
+        departureAirport: _flightDepartureAirportController.text.trim(),
+        arrivalAirport: _flightArrivalAirportController.text.trim(),
+        departureTime: _flightDepartureDateTime,
+        arrivalTime: _flightArrivalDateTime,
+        bookingReference: _flightBookingRefController.text.trim(),
+      );
+    } else {
+      _flightDetails = null;
+    }
+
+    if (_accNameController.text.isNotEmpty ||
+        _accAddressController.text.isNotEmpty ||
+        _accBookingRefController.text.isNotEmpty ||
+        _accCheckInDate != null ||
+        _accCheckOutDate != null) {
+      _accommodation = Accommodation(
+        name: _accNameController.text.trim(),
+        address: _accAddressController.text.trim(),
+        checkInDate: _accCheckInDate,
+        checkOutDate: _accCheckOutDate,
+        bookingReference: _accBookingRefController.text.trim(),
+      );
+    } else {
+      _accommodation = null;
+    }
 
     final now = DateTime.now();
 
@@ -208,50 +242,21 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
       startDate: _selectedDateRange!.start,
       endDate: _selectedDateRange!.end,
       location: _selectedLocation!,
-      ownerId: _currentUserId, // Replace with actual authenticated user ID
-      sharedWith: [], // Initialize as empty
+      ownerId: "-1",
       notes:
           _notesController.text.trim().isNotEmpty
               ? _notesController.text.trim()
               : null,
-      // Optional fields initialized to null or default
-      flightDetails: null,
-      accommodation: null,
-      checklist:
-          [], // Initialize as empty list or null based on your model's preference
-      itinerary: {}, // Initialize as empty map or null
+      flightDetails: _flightDetails,
+      accommodation: _accommodation,
+      checklist: _checklistItems.isNotEmpty ? List.from(_checklistItems) : null,
+      itinerary: _itineraryData.isNotEmpty ? Map.from(_itineraryData) : null,
       createdAt: now,
       updatedAt: now,
+      thumbnail: "",
     );
 
-    // In your final version, this will be:
-    // final result = await widget.viewModel.addTravelPlan(newPlan);
-    // final result = await widget.travelPlanRepository.addTravelPlan(newPlan);
-    //
-    // if (!mounted) return;
-    //
-    // setState(() {
-    //   _isLoading = false;
-    // });
-    //
-    // if (result.isSuccess) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //       content: Text('Travel plan added successfully!'),
-    //       backgroundColor: Colors.green,
-    //     ),
-    //   );
-    //   Navigator.of(context).pop(true); // Pop and indicate success
-    // } else {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     SnackBar(
-    //       content: Text(
-    //         'Failed to add travel plan: ${result.error.toString()}',
-    //       ),
-    //       backgroundColor: Theme.of(context).colorScheme.error,
-    //     ),
-    //   );
-    // }
+    return newPlan;
   }
 
   @override
@@ -262,21 +267,6 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
           'Add New Travel Plan',
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        actions: [
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _saveTravelPlan,
-              tooltip: 'Save Plan',
-            ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -317,7 +307,7 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                 controller: _locationTextController,
                 builder: (context, controller, focusNode) {
                   return TextFieldWithLabel(
-                    label: "Main Destination",
+                    label: "Main Destination*",
                     textFieldLabel: "e.g. Manila, Philippines",
                     controller: controller,
                     focusNode: focusNode,
@@ -332,8 +322,19 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                         _formKey.currentState?.validate(); // Re-validate
                       }
                     },
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please select a location.';
+                      }
+
+                      if (_selectedLocation == null) {
+                        return "Please select a location from the suggestions.";
+                      }
+                      return null;
+                    },
                   );
                 },
+                hideOnEmpty: true,
                 suggestionsCallback: (pattern) async {
                   if (pattern.length < 3) {
                     return []; // Don't search for very short patterns
@@ -428,6 +429,24 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                 children: [
                   ExpansionPanel(
                     headerBuilder: (BuildContext context, bool isExpanded) {
+                      int totalItems = 0;
+                      for (var list in _itineraryData.values) {
+                        totalItems += list.length;
+                      }
+                      return ListTile(
+                        title: Text(
+                          'Daily Itinerary ($totalItems items) (Optional)',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      );
+                    },
+                    body: _buildItinerarySection(),
+                    isExpanded:
+                        _areOptionalSectionsExpanded[0], // Assuming it's the 4th item
+                    canTapOnHeader: true,
+                  ),
+                  ExpansionPanel(
+                    headerBuilder: (BuildContext context, bool isExpanded) {
                       return ListTile(
                         title: Text(
                           'Flight Details (Optional)',
@@ -436,7 +455,7 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                       );
                     },
                     body: _buildFlightDetailsSection(),
-                    isExpanded: _areOptionalSectionsExpanded[0],
+                    isExpanded: _areOptionalSectionsExpanded[1],
                     canTapOnHeader: true,
                   ),
                   ExpansionPanel(
@@ -449,7 +468,7 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                       );
                     },
                     body: _buildAccommodationSection(),
-                    isExpanded: _areOptionalSectionsExpanded[1],
+                    isExpanded: _areOptionalSectionsExpanded[2],
                     canTapOnHeader: true,
                   ),
                   ExpansionPanel(
@@ -462,35 +481,24 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                       );
                     },
                     body: _buildChecklistSection(),
-                    isExpanded: _areOptionalSectionsExpanded[2],
+                    isExpanded: _areOptionalSectionsExpanded[3],
                     canTapOnHeader: true,
                   ),
                 ],
               ),
-              // --- END OPTIONAL SECTIONS ---
               const SizedBox(height: 24),
-              ElevatedButton.icon(
-                icon:
-                    _isLoading
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                        : const Icon(Icons.save_alt_outlined),
-                label: Text(_isLoading ? 'Saving...' : 'Create Travel Plan'),
-                onPressed: _isLoading ? null : _saveTravelPlan,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  textStyle: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: Colors.white),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                ),
+              ListenableButton(
+                icon: Icons.save_alt_outlined,
+                label: "Create Travel Plan",
+                command: widget.viewModel.addTravelPlan,
+                onPressed: () {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  final newPlan = _collatetoTravelPlan();
+                  newPlan != null
+                      ? widget.viewModel.addTravelPlan.execute(newPlan)
+                      : null;
+                },
               ),
             ],
           ),
@@ -625,8 +633,9 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
                       context,
                       initialDateTime: _flightDepartureDateTime,
                     );
-                    if (dt != null)
+                    if (dt != null) {
                       setState(() => _flightDepartureDateTime = dt);
+                    }
                   },
                 ),
               ),
@@ -862,5 +871,251 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildItinerarySection() {
+    if (_selectedDateRange == null) {
+      return const Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Text(
+          "Please select trip dates first to add itinerary items.",
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    List<DateTime> tripDays = [];
+    DateTime currentDate = _selectedDateRange!.start;
+    while (currentDate.isBefore(_selectedDateRange!.end) ||
+        currentDate.isAtSameMomentAs(_selectedDateRange!.end)) {
+      tripDays.add(currentDate);
+      currentDate = currentDate.add(const Duration(days: 1));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Day Selector (e.g., Dropdown or Horizontal List)
+          _buildDaySelector(tripDays),
+          const SizedBox(height: 16),
+
+          if (_currentlySelectedDayForItinerary != null) ...[
+            Text(
+              "Itinerary for ${DateFormat.yMMMd().format(_currentlySelectedDayForItinerary!)}:",
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            _buildItineraryListForSelectedDay(),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text("Add Item to this Day"),
+                onPressed:
+                    () => _showAddEditItineraryItemDialog(
+                      context,
+                      _currentlySelectedDayForItinerary!,
+                    ),
+              ),
+            ),
+          ] else ...[
+            const Text("Select a day above to view or add itinerary items."),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDaySelector(List<DateTime> tripDays) {
+    if (tripDays.isEmpty) return const SizedBox.shrink();
+
+    return DropdownButtonFormField<DateTime>(
+      decoration: const InputDecoration(
+        labelText: "Select Day for Itinerary",
+        border: OutlineInputBorder(),
+      ),
+      value: _currentlySelectedDayForItinerary,
+      hint: const Text("Choose a day"),
+      items:
+          tripDays.map((day) {
+            return DropdownMenuItem<DateTime>(
+              value: day,
+              child: Text(
+                DateFormat('EEE, MMM d, yyyy').format(day),
+              ), // e.g., Mon, Sep 12, 2023
+            );
+          }).toList(),
+      onChanged: (DateTime? newValue) {
+        setState(() {
+          _currentlySelectedDayForItinerary = newValue;
+          if (newValue != null) {
+            _selectedItineraryDateKey = DateFormat(
+              'yyyy-MM-dd',
+            ).format(newValue);
+          } else {
+            _selectedItineraryDateKey = null;
+          }
+        });
+      },
+    );
+  }
+
+  Widget _buildItineraryListForSelectedDay() {
+    if (_selectedItineraryDateKey == null ||
+        _itineraryData[_selectedItineraryDateKey] == null ||
+        _itineraryData[_selectedItineraryDateKey]!.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0),
+        child: Text(
+          "No items for this day yet. Click 'Add Item' below.",
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    List<ItineraryItem> items = _itineraryData[_selectedItineraryDateKey]!;
+    // Optional: Sort items by startTime
+    items.sort((a, b) {
+      if (a.startTime == null && b.startTime == null) return 0;
+      if (a.startTime == null) return 1; // Nulls last
+      if (b.startTime == null) return -1; // Nulls last
+      return a.startTime!.compareTo(b.startTime!);
+    });
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4.0),
+          child: ListTile(
+            title: Text(item.title),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.startTime != null)
+                  Text(
+                    "Time: ${DateFormat.jm().format(item.startTime!)}${item.endTime != null ? ' - ${DateFormat.jm().format(item.endTime!)}' : ''}",
+                  ),
+                if (item.location != null)
+                  Text("Location: ${item.location!.name}"),
+                if (item.type != null) Text("Type: ${item.type}"),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  onPressed:
+                      () => _showAddEditItineraryItemDialog(
+                        context,
+                        _currentlySelectedDayForItinerary!,
+                        initialItem: item,
+                      ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                  onPressed: () => _deleteItineraryItem(item),
+                ),
+              ],
+            ),
+            onTap:
+                () => _showAddEditItineraryItemDialog(
+                  context,
+                  _currentlySelectedDayForItinerary!,
+                  initialItem: item,
+                ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _deleteItineraryItem(ItineraryItem itemToDelete) {
+    if (_selectedItineraryDateKey == null) return;
+    setState(() {
+      _itineraryData[_selectedItineraryDateKey]?.removeWhere(
+        (item) => item.id == itemToDelete.id,
+      );
+      if (_itineraryData[_selectedItineraryDateKey]?.isEmpty ?? false) {
+        _itineraryData.remove(
+          _selectedItineraryDateKey,
+        ); // Optional: remove day if no items
+      }
+    });
+  }
+
+  Future<void> _showAddEditItineraryItemDialog(
+    BuildContext context,
+    DateTime dayOfItinerary, {
+    ItineraryItem? initialItem,
+  }) async {
+    final result = await showDialog<ItineraryItem>(
+      context: context,
+      barrierDismissible: false, // User must tap button!
+      builder: (BuildContext dialogContext) {
+        return AddEditItineraryItemDialog(
+          initialItem: initialItem,
+          dayOfItinerary: dayOfItinerary,
+        );
+      },
+    );
+
+    if (result != null && _selectedItineraryDateKey != null) {
+      setState(() {
+        _itineraryData.putIfAbsent(_selectedItineraryDateKey!, () => []);
+
+        final listForDay = _itineraryData[_selectedItineraryDateKey]!;
+        final existingIndex = listForDay.indexWhere(
+          (item) => item.id == result.id,
+        );
+
+        if (existingIndex != -1) {
+          // Editing existing
+          listForDay[existingIndex] = result;
+        } else {
+          // Adding new
+          listForDay.add(result);
+        }
+      });
+    }
+  }
+
+  void _onAddTravelPlanResult() {
+    if (!mounted) return;
+
+    final addState = widget.viewModel.addTravelPlan;
+    if (addState.completed) {
+      addState.clearResult();
+      if (context.mounted) {
+        context.go(Routes.home);
+      }
+    } else if (addState.error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          AppSnackBar.show(
+            context: context,
+            content: Text((addState.result as Error).toString()),
+            actionLabel: "Try again",
+            type: "error",
+            onPressed: () {
+              if (mounted) {
+                widget.viewModel.addTravelPlan.execute(());
+              }
+            },
+          ),
+        );
+      }
+      addState.clearResult();
+    }
   }
 }
