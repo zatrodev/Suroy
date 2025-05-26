@@ -3,6 +3,7 @@ import 'package:app/routing/routes.dart';
 import 'package:app/ui/home/plans/view_models/plans_viewmodel.dart';
 import 'package:app/ui/home/plans/widgets/shared_travel_plan_card.dart';
 import 'package:app/ui/home/plans/widgets/travel_plan_card.dart';
+import 'package:app/ui/home/plans/widgets/travel_plan_search.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,13 +18,16 @@ class PlansScreen extends StatefulWidget {
 
 class _PlansScreenState extends State<PlansScreen> {
   final CarouselController _carouselController = CarouselController(
-    initialItem: 1,
+    initialItem: 0,
   );
-  final TextEditingController _searchController = TextEditingController();
+  final SearchController _searchController = SearchController();
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(() {
+      widget.viewModel.updateSearchText(_searchController.text.trim());
+    });
   }
 
   @override
@@ -54,31 +58,19 @@ class _PlansScreenState extends State<PlansScreen> {
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged:
-                  (value) => widget.viewModel.updateSearchText(value.trim()),
-              style: Theme.of(context).textTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Search your trips by name or location',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon:
-                    widget.viewModel.searchText.isNotEmpty
-                        ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                        : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
+            child: StreamBuilder<List<TravelPlan>>(
+              stream: widget.viewModel.watchMyTravelPlans(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return TravelPlanSearch(
+                  searchController: _searchController,
+                  onSearchChanged: widget.viewModel.updateSearchText,
+                  travelPlans: snapshot.data!,
+                );
+              },
             ),
           ),
         ),
@@ -174,6 +166,15 @@ class _PlansScreenState extends State<PlansScreen> {
                 }
 
                 final travelPlans = snapshot.data!;
+
+                // Sort plans by start date (nearest first)
+                final sortedPlans = List<TravelPlan>.from(travelPlans)
+                  ..sort((a, b) => a.startDate.compareTo(b.startDate));
+
+                // Get upcoming trips (max 2)
+                final upcomingTrips = sortedPlans.take(2).toList();
+                final remainingPlans = sortedPlans.skip(2).toList();
+
                 print("TRAVEL PLANS: $travelPlans");
 
                 return Column(
@@ -188,7 +189,7 @@ class _PlansScreenState extends State<PlansScreen> {
                             horizontal: 16.0,
                           ),
                           child: Text(
-                            "Your travel plans",
+                            "Upcoming",
                             style: Theme.of(context).textTheme.titleMedium!
                                 .copyWith(fontWeight: FontWeight.bold),
                           ),
@@ -196,26 +197,61 @@ class _PlansScreenState extends State<PlansScreen> {
                         AspectRatio(
                           aspectRatio: 4 / 3,
                           child: CarouselView(
+                            itemExtent: 350,
+                            shrinkExtent: 0,
                             onTap: (index) {
                               context.go(
                                 Routes.travelPlanWithId(travelPlans[index].id!),
                               );
                             },
-                            itemExtent: double.infinity,
                             controller: _carouselController,
                             itemSnapping: true,
                             children:
-                                travelPlans
+                                upcomingTrips
                                     .map((plan) => TravelPlanCard(plan: plan))
                                     .toList(),
                           ),
                         ),
                       ],
                     ),
+                    // All Travel Plans List
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12.0,
+                        horizontal: 16.0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        spacing: 16,
+                        children: [
+                          Text(
+                            "Your Travel Plans",
+                            style: Theme.of(context).textTheme.titleMedium!
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: remainingPlans.length,
+                            itemBuilder: (context, index) {
+                              final plan = remainingPlans[index];
+                              return SharedTravelPlanCard(
+                                plan: plan,
+                                onTap: () {
+                                  context.go('/plans/${plan.id}');
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 );
               },
             ),
+
+            // Shared Travel Plans Section
             StreamBuilder<List<TravelPlan>>(
               stream: widget.viewModel.watchSharedTravelPlans(),
               builder: (context, snapshot) {

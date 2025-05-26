@@ -40,7 +40,7 @@ class _TravelPlanCardState extends State<TravelPlanCard> {
 
     return Card(
       elevation: 3.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         fit: StackFit.expand,
