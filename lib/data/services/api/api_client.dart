@@ -14,19 +14,6 @@ class ApiClient {
   final int _port;
   final HttpClient Function() _clientFactory;
 
-  AuthHeaderProvider? _authHeaderProvider;
-
-  set authHeaderProvider(AuthHeaderProvider authHeaderProvider) {
-    _authHeaderProvider = authHeaderProvider;
-  }
-
-  Future<void> _authHeader(HttpHeaders headers) async {
-    final header = _authHeaderProvider?.call();
-    if (header != null) {
-      headers.add(HttpHeaders.authorizationHeader, header);
-    }
-  }
-
   Future<Result<void>> pushAddFriendNotification(
     String senderUid,
     String receiverUid,

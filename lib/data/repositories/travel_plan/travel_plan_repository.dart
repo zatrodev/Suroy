@@ -87,10 +87,7 @@ class TravelPlanRepository extends FirestoreService {
     try {
       return Result.ok(await collectionReference.doc(planId).delete());
     } on FirebaseException catch (e) {
-      print(
-        'Error deleting travel plan (FirebaseException): ${e.code} - ${e.message}',
-      );
-      return Result.error(e);
+      return Result.error(Exception("Firebase error: ${e.message}"));
     } on Exception catch (e) {
       print('Error deleting travel plan (General Exception): $e');
       return Result.error(e);

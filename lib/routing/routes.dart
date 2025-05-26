@@ -6,9 +6,9 @@ abstract final class Routes {
   static const profile = "/profile";
   static const editProfileRelative = "edit";
   static const editProfile = "$profile/$editProfileRelative";
-  static const travelPlanDetails = "/travel-plan/:id";
   static const notificationsRelative = "notifications";
   static const notifications = "$plans/$notificationsRelative";
   static const addPlanRelative = 'add';
   static const addPlan = '$plans/$addPlanRelative';
+  static String travelPlanWithId(String id) => '$plans/$id';
 }

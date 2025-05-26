@@ -178,27 +178,6 @@ class _AddTravelPlanScreenState extends State<AddTravelPlanScreen> {
   }
 
   TravelPlan? _collatetoTravelPlan() {
-    // if (_selectedDateRange == null) {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     AppSnackBar.show(
-    //       context: context,
-    //       content: Text('Please select a date range.'),
-    //       type: "error",
-    //     ),
-    //   );
-    //   return null;
-    // }
-    if (_selectedLocation == null) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   AppSnackBar.show(
-      //     context: context,
-      //     content: Text('Please enter and confirm the main destination.'),
-      //     type: "error",
-      //   ),
-      // );
-      return null;
-    }
-
     if (_flightAirlineController.text.isNotEmpty ||
         _flightNumberController.text.isNotEmpty ||
         _flightDepartureAirportController.text.isNotEmpty ||

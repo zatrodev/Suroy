@@ -234,7 +234,7 @@ class _SocialScreenState extends State<SocialScreen>
           _setupChipAnimations(currentChipLabels.length);
 
           final cardSwiperKey = ValueKey(
-            "${_currentUserList.length}-${newEffectiveTopIndex}",
+            "${_currentUserList.length}-$newEffectiveTopIndex",
           );
 
           return Stack(
@@ -264,8 +264,6 @@ class _SocialScreenState extends State<SocialScreen>
                     percentThresholdY,
                   ) {
                     final user = _currentUserList[index];
-                    print("INDEX: $index");
-                    print("CURRENT USER LIST: $_currentUserList");
 
                     return UserCard(
                       user: user,

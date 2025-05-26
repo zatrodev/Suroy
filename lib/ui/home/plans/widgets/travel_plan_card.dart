@@ -6,9 +6,8 @@ import 'package:intl/intl.dart';
 
 class TravelPlanCard extends StatefulWidget {
   final TravelPlan plan;
-  final VoidCallback? onTap;
 
-  const TravelPlanCard({super.key, required this.plan, this.onTap});
+  const TravelPlanCard({super.key, required this.plan});
 
   @override
   State<TravelPlanCard> createState() => _TravelPlanCardState();
@@ -43,167 +42,159 @@ class _TravelPlanCardState extends State<TravelPlanCard> {
       elevation: 3.0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: widget.onTap,
-        splashColor: Theme.of(
-          context,
-        ).colorScheme.primary.withValues(alpha: 0.2),
-        highlightColor: Theme.of(
-          context,
-        ).colorScheme.primary.withValues(alpha: 0.1),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              child: Image.network(
-                widget.plan.thumbnail,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: Colors.grey[200],
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.grey[400],
-                        size: 60,
-                      ),
-                    ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value:
-                          loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                    ),
-                  );
-                },
-              ),
-            ),
-
-            Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withValues(alpha: 0.0),
-                      Colors.black.withValues(alpha: 0.1),
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                ),
-              ),
-            ),
-
-            Positioned(
-              top: 16.0,
-              right: 16.0,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                      vertical: 4.0,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(
-                        20.0,
-                      ), // Make it pill-shaped
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14.0, // Adjusted size for pill
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        const SizedBox(width: 4.0), // Slightly reduced spacing
-                        Flexible(
-                          child: Text(
-                            widget.plan.location.name.isNotEmpty
-                                ? widget.plan.location.name
-                                : "Unknown Location",
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodySmall?.copyWith(
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface, // Contrasting color
-                            ),
-                            overflow: TextOverflow.ellipsis, // Good to keep
-                            maxLines: 1,
-                          ),
-                        ),
-                      ],
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Positioned.fill(
+            child: Image.network(
+              widget.plan.thumbnail,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[200],
+                  child: Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.grey[400],
+                      size: 60,
                     ),
                   ),
-                ),
-              ),
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: CircularProgressIndicator(
+                    value:
+                        loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                  ),
+                );
+              },
             ),
+          ),
 
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 12.0,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(width: 6.0),
-                        Expanded(
-                          child: Text(
-                            dateRangeDisplay,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4.0),
-                    Text(
-                      widget.plan.name.isNotEmpty
-                          ? widget.plan.name
-                          : "Untitled Plan",
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    // const SizedBox(height: 6.0),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withValues(alpha: 0.0),
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.5, 1.0],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          Positioned(
+            top: 16.0,
+            right: 16.0,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.all(Radius.circular(20)),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 4.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(
+                      20.0,
+                    ), // Make it pill-shaped
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 14.0, // Adjusted size for pill
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      const SizedBox(width: 4.0), // Slightly reduced spacing
+                      Flexible(
+                        child: Text(
+                          widget.plan.location.name.isNotEmpty
+                              ? widget.plan.location.name
+                              : "Unknown Location",
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onSurface, // Contrasting color
+                          ),
+                          overflow: TextOverflow.ellipsis, // Good to keep
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 12.0,
+                        color: Colors.white70,
+                      ),
+                      const SizedBox(width: 6.0),
+                      Expanded(
+                        child: Text(
+                          dateRangeDisplay,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4.0),
+                  Text(
+                    widget.plan.name.isNotEmpty
+                        ? widget.plan.name
+                        : "Untitled Plan",
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  // const SizedBox(height: 6.0),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
 

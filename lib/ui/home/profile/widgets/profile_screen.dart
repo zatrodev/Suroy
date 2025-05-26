@@ -61,13 +61,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _navigateToEditProfile(
-    BuildContext context,
-    User currentUser,
-  ) async {
+  Future<void> _navigateToEditProfile(BuildContext context) async {
     final dynamic result = await context.push<Ok?>(
       '${GoRouterState.of(context).matchedLocation}/edit',
-      extra: currentUser,
     );
 
     if (result is Ok) {
@@ -147,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         SliverToBoxAdapter(
           child: ProfileBody(
             user: user,
-            navigateToEditProfile: () => _navigateToEditProfile(context, user),
+            navigateToEditProfile: () => _navigateToEditProfile(context),
           ),
         ),
       ],

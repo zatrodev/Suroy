@@ -196,6 +196,11 @@ class _PlansScreenState extends State<PlansScreen> {
                         AspectRatio(
                           aspectRatio: 4 / 3,
                           child: CarouselView(
+                            onTap: (index) {
+                              context.go(
+                                Routes.travelPlanWithId(travelPlans[index].id!),
+                              );
+                            },
                             itemExtent: double.infinity,
                             controller: _carouselController,
                             itemSnapping: true,
@@ -265,8 +270,8 @@ class _PlansScreenState extends State<PlansScreen> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton.small(
+            heroTag: "qrFab",
             onPressed: () {
-              // Placeholder button for edit screen
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('QR Scan feature')));

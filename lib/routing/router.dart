@@ -8,6 +8,10 @@ import 'package:app/ui/auth/login/widgets/sign_in_screen.dart';
 import 'package:app/ui/home/home.dart';
 import 'package:app/ui/home/plans/add/view_models/add_travel_plan_viewmodel.dart';
 import 'package:app/ui/home/plans/add/widgets/add_travel_plan_screen.dart';
+import 'package:app/ui/home/plans/details/view_models/travel_plan_details_viewmodel.dart';
+import 'package:app/ui/home/plans/details/widgets/travel_plan_details_screen.dart';
+import 'package:app/ui/home/plans/edit/view_models/edit_travel_plan_viewmodel.dart';
+import 'package:app/ui/home/plans/edit/widgets/edit_travel_plan_screen.dart';
 import 'package:app/ui/home/plans/view_models/plans_viewmodel.dart';
 import 'package:app/ui/home/plans/widgets/plans_screen.dart';
 import 'package:app/ui/home/profile/edit/view_models/edit_profile_viewmodel.dart';
@@ -64,7 +68,6 @@ GoRouter router(AuthRepository authRepository) {
                 pageBuilder:
                     (context, state) => NoTransitionPage(
                       key: state.pageKey,
-                      // For MVVM, you'd instantiate/provide PlansViewModel here
                       child: PlansScreen(
                         viewModel: TravelPlanViewmodel(
                           travelPlanRepository: context.read(),
@@ -89,7 +92,7 @@ GoRouter router(AuthRepository authRepository) {
                         ),
                   ),
                   GoRoute(
-                    path: Routes.addPlanRelative, // This will be 'add'
+                    path: Routes.addPlanRelative,
                     pageBuilder: (context, state) {
                       return SlideTransitionPage(
                         key: state.pageKey,
@@ -102,6 +105,39 @@ GoRouter router(AuthRepository authRepository) {
                         ),
                       );
                     },
+                  ),
+                  GoRoute(
+                    path: ":id",
+                    builder: (context, state) {
+                      final id = state.pathParameters["id"]!;
+                      final viewModel = TravelPlanDetailsViewmodel(
+                        travelPlanRepository: context.read(),
+                      );
+
+                      viewModel.loadTravelPlan.execute(id);
+
+                      return TravelPlanDetailsScreen(viewModel: viewModel);
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: Routes.editProfileRelative,
+                        pageBuilder: (context, state) {
+                          final id = state.pathParameters["id"]!;
+                          final viewModel = EditTravelPlanViewmodel(
+                            travelPlanRepository: context.read(),
+                          );
+
+                          viewModel.loadTravelPlan.execute(id);
+
+                          return SlideTransitionPage(
+                            key: state.pageKey,
+                            duration: Duration(milliseconds: 500),
+                            child: EditTravelPlanScreen(viewModel: viewModel),
+                            slideDirection: SlideDirection.bottomToTop,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

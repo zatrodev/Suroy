@@ -98,12 +98,8 @@ class _MainAppState extends State<MainApp> {
     });
   }
 
-  // TODO:
   void _handleNotificationTap(String payload) {
     print("MyApp: Handling tapped notification payload: $payload");
-    // Example: payload might be "type:id" e.g., "plan:travel_plan_123"
-    // Or "route:/profile"
-    // Implement your navigation logic based on the payload
     if (payload.startsWith(Routes.plans)) {
       context.go(payload);
     } else if (payload.startsWith("planId:")) {
