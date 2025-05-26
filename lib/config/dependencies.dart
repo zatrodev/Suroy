@@ -1,5 +1,4 @@
 import 'package:app/data/repositories/auth/auth_repository.dart';
-import 'package:app/data/repositories/notification/notification_model.dart';
 import 'package:app/data/repositories/notification/notification_repostiory.dart';
 import 'package:app/data/repositories/travel_plan/travel_plan_repository.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
