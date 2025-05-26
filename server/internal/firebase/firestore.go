@@ -28,6 +28,31 @@ type UserPayload struct {
 	FCMTokens []string `firestore:"fcmTokens"`
 }
 
+func (f *FirestoreClient) GetUserByUsername(ctx context.Context, username string) (*UserPayload, error) {
+	iter := f.client.Collection("users").Where("username", "==", username).Documents(ctx)
+
+	userDoc, err := iter.Next()
+	if err != nil {
+		if err.Error() == "iterator done" {
+			return nil, err
+		}
+
+		log.Printf("Error iterating travel plans: %v", err)
+		return nil, err
+	}
+
+	var userData UserPayload
+
+	if err := userDoc.DataTo(&userData); err != nil {
+		f.logger.Printf("Error unmarshalling user %s data: %v", username, err)
+		return nil, err
+	}
+
+	f.logger.Printf("user loaded: %v", userData)
+
+	return &userData, nil
+}
+
 func (f *FirestoreClient) GetUserByUID(ctx context.Context, uid string) (*UserPayload, error) {
 	userDoc, err := f.client.Collection("users").Doc(uid).Get(ctx)
 	if err != nil {
@@ -56,4 +81,20 @@ func (f *FirestoreClient) CreateNotification(ctx context.Context, notification N
 	}
 
 	return nil
+}
+
+func (f *FirestoreClient) GetNearingTravelPlans(ctx context.Context) *firestore.DocumentIterator {
+	now := time.Now().UTC()
+	tomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+	dayAfterTomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+2, 0, 0, 0, 0, time.UTC)
+
+	f.logger.Printf("Checking for plans starting between %v and %v\n", tomorrowStart, dayAfterTomorrowStart)
+
+	iter := f.client.Collection("travel_plans").
+		Where("isStartDateReminderSent", "!=", true).
+		Where("startDate", ">=", tomorrowStart).
+		Where("startDate", "<", dayAfterTomorrowStart).
+		Documents(ctx)
+
+	return iter
 }

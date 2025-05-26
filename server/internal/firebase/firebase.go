@@ -20,7 +20,8 @@ func NewServices(ctx context.Context, serviceAccountKeyPath string) *Services {
 
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
-		fmt.Printf("error getting Firebase App: %w", err)
+		var a []any = []any{err}
+		fmt.Fprintf(os.Stdout, "error getting Firebase App: %w", a...)
 		return nil
 	}
 
