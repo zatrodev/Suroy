@@ -49,7 +49,7 @@ cd server
 go run ./cmd/api
 ```
 ```bash
-To start the "remind" notification
+# To start the "remind" notification
 go run ./cmd/cron
 ```
 ## Screenshots
