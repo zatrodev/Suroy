@@ -4,6 +4,7 @@ import 'package:app/ui/core/ui/app_snackbar.dart';
 import 'package:app/ui/core/ui/error_indicator.dart';
 import 'package:app/ui/core/ui/listenable_button.dart';
 import 'package:app/ui/core/ui/text_field_with_label.dart';
+import 'package:app/ui/home/plans/add/widgets/map_picker_screen.dart';
 import 'package:app/ui/home/plans/edit/view_models/edit_travel_plan_viewmodel.dart';
 import 'package:app/ui/home/plans/widgets/add_edit_itinerary_item_dialog.dart';
 import 'package:app/utils/result.dart';
@@ -11,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:latlong2/latlong.dart' as latlong2;
 import 'package:uuid/uuid.dart';
 
 class EditTravelPlanScreen extends StatefulWidget {
@@ -72,6 +74,32 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
     super.initState();
     widget.viewModel.loadTravelPlan.addListener(_initializeFormFields);
     widget.viewModel.saveChanges.addListener(_onSaveChangesResult);
+  }
+
+  Future<void> _navigateToMapPicker() async {
+    final result = await Navigator.of(context).push<LocationData>(
+      MaterialPageRoute(
+        builder:
+            (context) => MapPickerScreen(
+              initialCenter:
+                  _selectedLocation != null
+                      ? latlong2.LatLng(
+                        _selectedLocation!.latitude,
+                        _selectedLocation!.longitude,
+                      )
+                      : null, // Pass current selection to center map
+            ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result;
+        _locationTextController.text =
+            result.address ?? result.name; // Update text field
+      });
+      _formKey.currentState?.validate(); // Re-validate form
+    }
   }
 
   Future<DateTime?> _pickOptionalDate(
@@ -462,6 +490,16 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
                         ),
                       ),
                     ),
+
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text('Or Pick Location on Map'),
+                    onPressed: _navigateToMapPicker,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _notesController,

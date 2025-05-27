@@ -107,7 +107,7 @@ class SharedTravelPlanCard extends StatelessWidget {
                               alignment: Alignment.bottomLeft,
                               child: Text(
                                 (plan.location.name.isNotEmpty
-                                    ? "Exploring wdjwdjwhdjwhdwhjdhwdjh ${plan.location.name}"
+                                    ? "Exploring ${plan.location.name}"
                                     : "An exciting new adventure."),
                                 style: Theme.of(context).textTheme.bodySmall,
                                 maxLines: 2,

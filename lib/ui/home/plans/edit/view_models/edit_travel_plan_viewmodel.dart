@@ -1,6 +1,7 @@
 import 'package:app/data/repositories/travel_plan/travel_plan_model.dart';
 import 'package:app/data/repositories/travel_plan/travel_plan_repository.dart';
 import 'package:app/data/repositories/user/user_repository.dart';
+import 'package:app/data/services/unsplash/unsplash_service.dart';
 import 'package:app/utils/command.dart';
 import 'package:app/utils/result.dart';
 import 'package:flutter/foundation.dart';
@@ -16,6 +17,8 @@ class EditTravelPlanViewmodel extends ChangeNotifier {
     saveChanges = Command1<void, TravelPlan>(_saveChanges);
   }
 
+  final UnsplashService _unsplashService = UnsplashService();
+
   final TravelPlanRepository _travelPlanRepository;
   final UserRepository _userRepository;
   final _log = Logger('EditTravelPlanViewModel');
@@ -28,8 +31,33 @@ class EditTravelPlanViewmodel extends ChangeNotifier {
   late Command1 saveChanges;
   late Command1 loadTravelPlan;
 
+  Future<String> _fetchLocationImage(String location) async {
+    try {
+      final images = await _unsplashService.fetchImagesForLocation(
+        location,
+        count: 1,
+      );
+      _log.info("in fetch: $images");
+      if (images.isNotEmpty) {
+        return images.first.urls.regular;
+      } else {
+        return "";
+      }
+    } catch (e) {
+      _log.warning("Error in _fetchLocationImage: $e");
+      return "";
+    }
+  }
+
   Future<Result<void>> _saveChanges(TravelPlan updatedTravelPlan) async {
     notifyListeners();
+
+    if (updatedTravelPlan.location.name != _initialTravelPlan!.location.name) {
+      final imageUrl = await _fetchLocationImage(
+        updatedTravelPlan.location.name,
+      );
+      updatedTravelPlan = updatedTravelPlan.copyWith(thumbnail: imageUrl);
+    }
 
     final result = await _travelPlanRepository.updateTravelPlan(
       updatedTravelPlan,

@@ -6,7 +6,7 @@ typedef AuthHeaderProvider = String? Function();
 
 class ApiClient {
   ApiClient({String? host, int? port, HttpClient Function()? clientFactory})
-    : _host = host ?? "192.168.1.14",
+    : _host = host ?? "https://gecko-needed-elf.ngrok-free.app/",
       _port = port ?? 4000,
       _clientFactory = clientFactory ?? HttpClient.new;
 

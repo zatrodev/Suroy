@@ -36,7 +36,7 @@ class AddTravelPlanViewmodel {
         return "";
       }
     } catch (e) {
-      print("Error in _fetchLocationImage: $e");
+      _log.warning("Error in _fetchLocationImage: $e");
       return "";
     }
   }
