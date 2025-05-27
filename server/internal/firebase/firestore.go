@@ -28,29 +28,29 @@ type UserPayload struct {
 	FCMTokens []string `firestore:"fcmTokens"`
 }
 
-func (f *FirestoreClient) GetUserByUsername(ctx context.Context, username string) (*UserPayload, error) {
+func (f *FirestoreClient) GetUserByUsername(ctx context.Context, username string) (string, *UserPayload, error) {
 	iter := f.client.Collection("users").Where("username", "==", username).Documents(ctx)
 
 	userDoc, err := iter.Next()
 	if err != nil {
 		if err.Error() == "iterator done" {
-			return nil, err
+			return "", nil, err
 		}
 
 		log.Printf("Error iterating travel plans: %v", err)
-		return nil, err
+		return "", nil, err
 	}
 
 	var userData UserPayload
 
 	if err := userDoc.DataTo(&userData); err != nil {
 		f.logger.Printf("Error unmarshalling user %s data: %v", username, err)
-		return nil, err
+		return "", nil, err
 	}
 
 	f.logger.Printf("user loaded: %v", userData)
 
-	return &userData, nil
+	return userDoc.Ref.ID, &userData, nil
 }
 
 func (f *FirestoreClient) GetUserByUID(ctx context.Context, uid string) (*UserPayload, error) {

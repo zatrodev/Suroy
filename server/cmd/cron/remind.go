@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/v4/messaging"
@@ -39,7 +40,7 @@ func SendStartDateReminders(ctx context.Context, client *firebase.FirestoreClien
 
 		log.Printf("Found plan starting soon: %s (ID: %s) for owner: %s", planName, doc.Ref.ID, ownerID)
 
-		user, err := client.GetUserByUsername(ctx, ownerID)
+		uid, user, err := client.GetUserByUsername(ctx, ownerID)
 
 		fcmTokens := user.FCMTokens
 		notification := messaging.Notification{
@@ -55,6 +56,19 @@ func SendStartDateReminders(ctx context.Context, client *firebase.FirestoreClien
 		}
 
 		log.Printf("Successfully sent message for plan %s", doc.Ref.ID)
+
+		notificationData := &firebase.NotificationPayload{
+			Title:       notification.Title,
+			Body:        notification.Body,
+			SenderUID:   "-1",
+			RecieverUID: uid,
+			CreatedAt:   time.Now(),
+			Type:        "reminder",
+		}
+
+		if err = client.CreateNotification(ctx, *notificationData); err != nil {
+			continue
+		}
 
 		_, err = doc.Ref.Update(ctx, []firestore.Update{
 			{Path: "isStartDateReminderSent", Value: true},
