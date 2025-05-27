@@ -103,13 +103,12 @@ class _MainAppState extends State<MainApp> {
     if (payload.startsWith(Routes.plans)) {
       context.go(payload);
     } else if (payload.startsWith("planId:")) {
-      final planId = payload.split(":")[1];
-      context.goNamed(
-        'planDetails',
-        pathParameters: {'id': planId},
-      ); // Example named route
+      final id = payload.split(":")[1];
+      context.go(Routes.travelPlanWithId(id));
     } else if (payload == Routes.profile) {
       context.go(Routes.profile);
+    } else {
+      context.go(Routes.home);
     }
   }
 

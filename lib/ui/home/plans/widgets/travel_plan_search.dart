@@ -49,6 +49,10 @@ class TravelPlanSearch extends StatelessWidget {
           padding: const WidgetStatePropertyAll<EdgeInsets>(
             EdgeInsets.symmetric(horizontal: 16.0),
           ),
+          textStyle: WidgetStatePropertyAll(
+            Theme.of(context).textTheme.bodyMedium,
+          ),
+          elevation: WidgetStatePropertyAll(0),
           hintText: 'Search by name, location, or date',
           leading: const Icon(Icons.search),
           trailing: [

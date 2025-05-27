@@ -125,6 +125,7 @@ GoRouter router(AuthRepository authRepository) {
                           final id = state.pathParameters["id"]!;
                           final viewModel = EditTravelPlanViewmodel(
                             travelPlanRepository: context.read(),
+                            userRepository: context.read(),
                           );
 
                           viewModel.loadTravelPlan.execute(id);

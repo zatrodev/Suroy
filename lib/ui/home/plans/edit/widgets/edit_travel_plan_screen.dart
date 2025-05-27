@@ -56,8 +56,16 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
   DateTime? _currentlySelectedDayForItinerary;
   String? _selectedItineraryDateKey;
 
+  List<String> _sharedWithUsernames = [];
+
   final GeoapifyService _geoapifyService = GeoapifyService();
-  final List<bool> _areOptionalSectionsExpanded = [false, false, false, false];
+  final List<bool> _areOptionalSectionsExpanded = [
+    false,
+    false,
+    false,
+    false,
+    false,
+  ];
 
   @override
   void initState() {
@@ -180,6 +188,10 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
             )
             : {};
 
+    _sharedWithUsernames = List<String>.from(
+      plan.sharedWith,
+    ); // Assuming sharedWith stores usernames/IDs
+
     if (_selectedDateRange != null && _itineraryData.isNotEmpty) {
       _currentlySelectedDayForItinerary = _selectedDateRange!.start;
       _selectedItineraryDateKey = DateFormat(
@@ -281,6 +293,7 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
       itineraryOrNull:
           () => _itineraryData.isNotEmpty ? Map.from(_itineraryData) : null,
       updatedAt: DateTime.now(),
+      sharedWith: _sharedWithUsernames,
     );
 
     widget.viewModel.saveChanges.execute(updatedPlan);
@@ -529,6 +542,20 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
                         },
                         body: _buildChecklistSection(),
                         isExpanded: _areOptionalSectionsExpanded[3],
+                        canTapOnHeader: true,
+                      ),
+                      ExpansionPanel(
+                        headerBuilder: (BuildContext context, bool isExpanded) {
+                          return ListTile(
+                            title: Text(
+                              'Shared With (${_sharedWithUsernames.length} users) (Optional)',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          );
+                        },
+                        body: _buildSharedWithSection(),
+                        isExpanded:
+                            _areOptionalSectionsExpanded[4], // Adjust index
                         canTapOnHeader: true,
                       ),
                     ],
@@ -1047,6 +1074,121 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSharedWithSection() {
+    final theme = Theme.of(context);
+    final List<String> allFriendsUsernames = widget.viewModel.friends;
+
+    if (allFriendsUsernames.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        child: Text(
+          "You have no friends to share this plan with yet. Connect with friends first!",
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Share with Friends:",
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (allFriendsUsernames.isNotEmpty)
+          Wrap(
+            spacing: 8.0, // Horizontal space between chips
+            runSpacing: 8.0, // Vertical space between chip lines
+            children:
+                allFriendsUsernames.map((friendUsername) {
+                  final bool isSelected = _sharedWithUsernames.contains(
+                    friendUsername,
+                  );
+                  return ChoiceChip(
+                    label: Text(friendUsername),
+                    selected: isSelected,
+                    onSelected: (bool selected) {
+                      setState(() {
+                        if (selected) {
+                          if (!_sharedWithUsernames.contains(friendUsername)) {
+                            _sharedWithUsernames.add(friendUsername);
+                          }
+                        } else {
+                          _sharedWithUsernames.remove(friendUsername);
+                        }
+                      });
+                    },
+                    avatar:
+                        isSelected
+                            ? Icon(
+                              Icons.check_circle,
+                              color: theme.colorScheme.onPrimary,
+                            )
+                            : null, // Or CircleAvatar(child: Text(friendUsername[0]))
+                    selectedColor: theme.colorScheme.primary,
+                    labelStyle: TextStyle(
+                      color:
+                          isSelected
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.onSurface,
+                    ),
+                    // backgroundColor: theme.colorScheme.surfaceContainer, // Optional: background for unselected
+                    pressElevation: 2.0,
+                  );
+                }).toList(),
+          )
+        else
+          const Text(
+            "No friends available to share with.",
+          ), // Should be caught by the check above
+
+        const SizedBox(height: 16),
+        Text(
+          "Currently sharing with:",
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        _sharedWithUsernames.isEmpty
+            ? const Text(
+              "Not shared with anyone yet.",
+              style: TextStyle(fontStyle: FontStyle.italic),
+            )
+            : Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
+              children:
+                  _sharedWithUsernames.map((username) {
+                    return Chip(
+                      label: Text(username),
+                      avatar: CircleAvatar(
+                        backgroundColor: theme.colorScheme.secondaryContainer,
+                        child: Text(
+                          username[0].toUpperCase(),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                      onDeleted: () {
+                        setState(() {
+                          _sharedWithUsernames.remove(username);
+                        });
+                      },
+                      deleteIconColor: theme.colorScheme.error,
+                    );
+                  }).toList(),
+            ),
+      ],
     );
   }
 

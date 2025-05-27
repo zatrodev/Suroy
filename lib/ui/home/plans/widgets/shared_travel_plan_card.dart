@@ -106,9 +106,8 @@ class SharedTravelPlanCard extends StatelessWidget {
                             child: Align(
                               alignment: Alignment.bottomLeft,
                               child: Text(
-                                textAlign: TextAlign.end,
                                 (plan.location.name.isNotEmpty
-                                    ? "Exploring ${plan.location.name}"
+                                    ? "Exploring wdjwdjwhdjwhdwhjdhwdjh ${plan.location.name}"
                                     : "An exciting new adventure."),
                                 style: Theme.of(context).textTheme.bodySmall,
                                 maxLines: 2,
@@ -120,7 +119,6 @@ class SharedTravelPlanCard extends StatelessWidget {
                       ),
                     ),
 
-                    // Owner Avatar on Top Right
                     Positioned(
                       top: 0,
                       right: 0,
@@ -131,8 +129,8 @@ class SharedTravelPlanCard extends StatelessWidget {
                                 backgroundImage: MemoryImage(plan.ownerAvatar!),
                               )
                               : Container(
-                                width: 16,
-                                height: 16,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color:

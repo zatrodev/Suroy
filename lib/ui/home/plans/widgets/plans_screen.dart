@@ -92,82 +92,43 @@ class _PlansScreenState extends State<PlansScreen> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  if (widget.viewModel.searchText.isNotEmpty) {
-                    return Padding(
+                  return Center(
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
                         vertical: 40.0,
                         horizontal: 16.0,
                       ),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.search_off,
+                            Icons.luggage_outlined,
                             size: 48,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No plans match your search',
-                            style: Theme.of(context).textTheme.titleMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Try a different search term or clear the search.',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                            ),
-                            textAlign: TextAlign.center,
+                          const SizedBox(width: 20),
+                          Column(
+                            children: [
+                              Text(
+                                'You have no travel plans yet.',
+                                style: Theme.of(context).textTheme.titleMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                              Text(
+                                'Tap the "+" button to create one!',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    );
-                  } else {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 40.0,
-                          horizontal: 16.0,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.luggage_outlined,
-                              size: 48,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                            const SizedBox(width: 20),
-                            Column(
-                              children: [
-                                Text(
-                                  'You have no travel plans yet.',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  'Tap the "+" button to create one!',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
+                    ),
+                  );
                 }
 
                 final travelPlans = snapshot.data!;
 
-                // Sort plans by start date (nearest first)
                 final sortedPlans = List<TravelPlan>.from(travelPlans)
                   ..sort((a, b) => a.startDate.compareTo(b.startDate));
 
@@ -197,8 +158,10 @@ class _PlansScreenState extends State<PlansScreen> {
                         AspectRatio(
                           aspectRatio: 4 / 3,
                           child: CarouselView(
-                            itemExtent: 350,
-                            shrinkExtent: 0,
+                            itemExtent:
+                                upcomingTrips.length == 1
+                                    ? double.infinity
+                                    : 360,
                             onTap: (index) {
                               context.go(
                                 Routes.travelPlanWithId(travelPlans[index].id!),
@@ -214,38 +177,41 @@ class _PlansScreenState extends State<PlansScreen> {
                         ),
                       ],
                     ),
+
                     // All Travel Plans List
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12.0,
-                        horizontal: 16.0,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: 16,
-                        children: [
-                          Text(
-                            "Your Travel Plans",
-                            style: Theme.of(context).textTheme.titleMedium!
-                                .copyWith(fontWeight: FontWeight.bold),
+                    remainingPlans.isNotEmpty
+                        ? Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12.0,
+                            horizontal: 16.0,
                           ),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: remainingPlans.length,
-                            itemBuilder: (context, index) {
-                              final plan = remainingPlans[index];
-                              return SharedTravelPlanCard(
-                                plan: plan,
-                                onTap: () {
-                                  context.go('/plans/${plan.id}');
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            spacing: 16,
+                            children: [
+                              Text(
+                                "Your Travel Plans",
+                                style: Theme.of(context).textTheme.titleMedium!
+                                    .copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: remainingPlans.length,
+                                itemBuilder: (context, index) {
+                                  final plan = remainingPlans[index];
+                                  return SharedTravelPlanCard(
+                                    plan: plan,
+                                    onTap: () {
+                                      context.go('/plans/${plan.id}');
+                                    },
+                                  );
                                 },
-                              );
-                            },
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        )
+                        : SizedBox.shrink(),
                   ],
                 );
               },
@@ -291,7 +257,10 @@ class _PlansScreenState extends State<PlansScreen> {
                         itemCount: sharedTravelPlans.length,
                         itemBuilder: (context, index) {
                           final plan = sharedTravelPlans[index];
-                          return SharedTravelPlanCard(plan: plan);
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: SharedTravelPlanCard(plan: plan),
+                          );
                         },
                       ),
                     ],
@@ -304,6 +273,7 @@ class _PlansScreenState extends State<PlansScreen> {
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        spacing: 8.0,
         children: [
           FloatingActionButton.small(
             heroTag: "qrFab",
@@ -314,7 +284,6 @@ class _PlansScreenState extends State<PlansScreen> {
             },
             child: const Icon(Icons.qr_code_scanner),
           ),
-          SizedBox(height: 16),
           FloatingActionButton(
             heroTag: null,
             onPressed: () {

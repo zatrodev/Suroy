@@ -84,17 +84,19 @@ func (f *FirestoreClient) CreateNotification(ctx context.Context, notification N
 }
 
 func (f *FirestoreClient) GetNearingTravelPlans(ctx context.Context) *firestore.DocumentIterator {
-	now := time.Now().UTC()
-	tomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
-	dayAfterTomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+2, 0, 0, 0, 0, time.UTC)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(loc)
+	tomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, loc)
+	dayAfterTomorrowStart := time.Date(now.Year(), now.Month(), now.Day()+2, 0, 0, 0, 0, loc)
 
 	f.logger.Printf("Checking for plans starting between %v and %v\n", tomorrowStart, dayAfterTomorrowStart)
 
 	iter := f.client.Collection("travel_plans").
-		Where("isStartDateReminderSent", "!=", true).
+		Where("isStartDateReminderSent", "==", false).
 		Where("startDate", ">=", tomorrowStart).
-		Where("startDate", "<", dayAfterTomorrowStart).
 		Documents(ctx)
+
+	f.logger.Printf("Iterations: %v", iter)
 
 	return iter
 }

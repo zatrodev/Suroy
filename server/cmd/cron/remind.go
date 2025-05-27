@@ -17,10 +17,10 @@ func SendStartDateReminders(ctx context.Context, client *firebase.FirestoreClien
 	for {
 		doc, err := iter.Next()
 		if err != nil {
-			if err.Error() == "iterator done" {
+			if err.Error() == "no more items in the iterator" {
 				break
 			}
-			log.Printf("Error iterating travel plans: %v", err)
+			log.Printf("Error iterating travel plans: %v", err.Error())
 			return fmt.Errorf("iteration error: %w", err)
 		}
 
@@ -46,9 +46,12 @@ func SendStartDateReminders(ctx context.Context, client *firebase.FirestoreClien
 			Title: "Trip Reminder!",
 			Body:  fmt.Sprintf("Your trip '%s' is starting tomorrow!", planName),
 		}
+		payload := map[string]string{
+			"planId": doc.Ref.ID,
+		}
 
-		if err = fcmClient.SendNotifcationToTokens(ctx, fcmTokens, notification); err != nil {
-			return err
+		if err = fcmClient.SendNotifcationToTokens(ctx, fcmTokens, notification, payload); err != nil {
+			continue
 		}
 
 		log.Printf("Successfully sent message for plan %s", doc.Ref.ID)

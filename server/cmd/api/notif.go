@@ -70,8 +70,11 @@ func (app *application) sendNotificationHandler(w http.ResponseWriter, r *http.R
 		Title: notificationData.Title,
 		Body:  notificationData.Body,
 	}
+	payload := map[string]string{
+		"home": "home",
+	}
 
-	if err = app.services.FCM.SendNotifcationToTokens(r.Context(), receiverUser.FCMTokens, actualNotification); err != nil {
+	if err = app.services.FCM.SendNotifcationToTokens(r.Context(), receiverUser.FCMTokens, actualNotification, payload); err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}

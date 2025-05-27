@@ -95,25 +95,6 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final headerHeight = screenHeight * 0.35;
 
-    String dateRangeDisplay;
-    try {
-      final startDateFormatted = DateFormat.yMMMd().format(
-        widget.viewModel.travelPlan!.startDate,
-      );
-      final endDateFormatted = DateFormat.yMMMd().format(
-        widget.viewModel.travelPlan!.endDate,
-      );
-      if (widget.viewModel.travelPlan!.startDate.isAtSameMomentAs(
-        widget.viewModel.travelPlan!.endDate,
-      )) {
-        dateRangeDisplay = startDateFormatted;
-      } else {
-        dateRangeDisplay = '$startDateFormatted - $endDateFormatted';
-      }
-    } catch (e) {
-      dateRangeDisplay = "Dates not available";
-    }
-
     return Scaffold(
       body: ListenableBuilder(
         listenable: widget.viewModel.loadTravelPlan,
@@ -130,6 +111,25 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                 onPressed: () => context.go(Routes.plans),
               ),
             );
+          }
+
+          String dateRangeDisplay;
+          try {
+            final startDateFormatted = DateFormat.yMMMd().format(
+              widget.viewModel.travelPlan!.startDate,
+            );
+            final endDateFormatted = DateFormat.yMMMd().format(
+              widget.viewModel.travelPlan!.endDate,
+            );
+            if (widget.viewModel.travelPlan!.startDate.isAtSameMomentAs(
+              widget.viewModel.travelPlan!.endDate,
+            )) {
+              dateRangeDisplay = startDateFormatted;
+            } else {
+              dateRangeDisplay = '$startDateFormatted - $endDateFormatted';
+            }
+          } catch (e) {
+            dateRangeDisplay = "Dates not available";
           }
 
           return CustomScrollView(
@@ -371,6 +371,7 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        spacing: 8.0,
         children: [
           FloatingActionButton.small(
             backgroundColor: Theme.of(context).colorScheme.error,
