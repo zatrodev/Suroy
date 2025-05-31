@@ -54,7 +54,7 @@ go run ./cmd/api
 go run ./cmd/cron
 ```
 ## Screenshots
-![image](https://github.com/user-attachments/assets/9fe666da-f4b2-41f0-9c82-1b34789dd49a)
+![image](https://github.com/user-attachments/assets/4a4117fb-472d-4ac9-bedc-d4068d5812cd)
 
 ## Sources
 Imagery of created plans is fetched with the **Unsplash API** and Geolocation services are served by **Geoapify**.
