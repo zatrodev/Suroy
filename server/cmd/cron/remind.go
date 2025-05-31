@@ -60,7 +60,7 @@ func SendStartDateReminders(ctx context.Context, client *firebase.FirestoreClien
 		notificationData := &firebase.NotificationPayload{
 			Title:       notification.Title,
 			Body:        notification.Body,
-			SenderUID:   "-1",
+			SenderUID:   "",
 			RecieverUID: uid,
 			CreatedAt:   time.Now(),
 			Type:        "reminder",

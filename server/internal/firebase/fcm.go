@@ -27,6 +27,8 @@ func (fcm *FCMClient) SendNotifcationToTokens(ctx context.Context, tokens []stri
 			encounteredErrors = append(encounteredErrors, true)
 			continue
 		}
+
+		fcm.logger.Printf("Notification sent to %s.", token)
 	}
 
 	if len(encounteredErrors) == len(tokens) {

@@ -109,7 +109,6 @@ class NotificationViewModel {
 
     if (result is Error<void>) {
       _log.warning("Remove friend request failed");
-      return Result.error(result.error);
     }
 
     return _notificationRepository.deleteNotification(notificationId);

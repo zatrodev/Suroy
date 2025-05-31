@@ -303,3 +303,11 @@ class UserFirebaseModel {
     return Friend(username: username, isAccepted: false);
   }
 }
+
+extension ToJsonExtension on List<Friend> {
+  List<Map<String, dynamic>> toJson() {
+    return map((f) {
+      return f.toJson();
+    }).toList();
+  }
+}

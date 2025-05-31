@@ -481,16 +481,16 @@ class UserRepository extends FirestoreService {
       );
 
       await collectionReference.doc(currentModel.id).update({
-        "friends": updatedMyFriends,
+        "friends": updatedMyFriends.toJson(),
       });
 
       final updatedTheirFriends = friendUserData.friends;
-      friendUserData.friends.removeWhere(
+      updatedTheirFriends.removeWhere(
         (f) => f.username == currentModel.username,
       );
 
       await collectionReference.doc(friendId).update({
-        "friends": updatedTheirFriends,
+        "friends": updatedTheirFriends.toJson(),
       });
 
       print(

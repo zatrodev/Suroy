@@ -257,18 +257,15 @@ class _EditTravelPlanScreenState extends State<EditTravelPlanScreen> {
     final now = DateTime.now();
     final pickedDateRange = await showDateRangePicker(
       context: context,
-      initialDateRange:
-          _selectedDateRange ??
-          DateTimeRange(start: now, end: now.add(const Duration(days: 1))),
-      firstDate:
-          widget.viewModel.initialTravelPlan!.createdAt.isBefore(now)
-              ? widget.viewModel.initialTravelPlan!.createdAt
-              : now.subtract(const Duration(days: 365)),
+      initialDateRange: _selectedDateRange,
+      firstDate: widget.viewModel.initialTravelPlan!.startDate,
       lastDate: now.add(const Duration(days: 365 * 5)),
     );
     if (pickedDateRange != null) {
       setState(() {
         _selectedDateRange = pickedDateRange;
+        _currentlySelectedDayForItinerary = _selectedDateRange!.start;
+        _itineraryData = {};
       });
     }
   }
