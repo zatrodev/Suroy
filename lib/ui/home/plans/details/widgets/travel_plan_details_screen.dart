@@ -145,7 +145,7 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                   shadows: [
                     Shadow(
                       blurRadius: 1.0,
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                     ),
                   ],
                 ),
@@ -155,17 +155,7 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                     StretchMode.blurBackground,
                     StretchMode.fadeTitle,
                   ],
-                  centerTitle:
-                      true, // Or false if you want title left-aligned when collapsed
-                  // Title when collapsed (optional, if different from expanded title)
-                  // title: Text(
-                  //   plan.name,
-                  //   style: TextStyle(
-                  //     color: Colors.white, // Ensure visibility
-                  //     fontSize: 16.0,
-                  //     shadows: [Shadow(blurRadius: 1.0, color: Colors.black.withOpacity(0.7))]
-                  //   ),
-                  // ),
+                  centerTitle: true,
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -211,8 +201,8 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                             gradient: LinearGradient(
                               colors: [
                                 Colors.transparent,
-                                Colors.black.withOpacity(0.1),
-                                Colors.black.withOpacity(0.8),
+                                Colors.black.withValues(alpha: 0.1),
+                                Colors.black.withValues(alpha: 0.8),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -241,7 +231,7 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                                 shadows: [
                                   Shadow(
                                     blurRadius: 2.0,
-                                    color: Colors.black.withOpacity(0.7),
+                                    color: Colors.black.withValues(alpha: 0.7),
                                   ),
                                 ],
                               ),
@@ -252,11 +242,11 @@ class _TravelPlanDetailsScreenState extends State<TravelPlanDetailsScreen> {
                             Text(
                               dateRangeDisplay,
                               style: theme.textTheme.titleSmall?.copyWith(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 shadows: [
                                   Shadow(
                                     blurRadius: 1.0,
-                                    color: Colors.black.withOpacity(0.7),
+                                    color: Colors.black.withValues(alpha: 0.7),
                                   ),
                                 ],
                               ),
